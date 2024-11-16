@@ -1,0 +1,25 @@
+{
+  "name": "jffppf",
+  "version": "0.1.0",
+  "description": "Simple floor plan representation and navigation using pathfinding algorithms.",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JerichoFletcher/jffppf.git"
+  },
+  "author": "JerichoFletcher",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/JerichoFletcher/jffppf/issues"
+  },
+  "homepage": "https://github.com/JerichoFletcher/jffppf#readme",
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.3"
+  }
+}
