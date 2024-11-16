@@ -1,4 +1,4 @@
-import { Vector2, cross, diff } from "./vector2";
+import { Vector2, diff, dot, cross } from "./vector2";
 
 /**
  * Represents a room.
@@ -75,6 +75,77 @@ export default class Room{
 
     // The area of the polygon is half the absolute value of the shoelace area
     this.#area = Math.abs(signedArea / 2);
+  }
+
+  /**
+   * Check if a point is inside of the room.
+   * @param point A point to check.
+   * @returns Whether `point` lies within the boundary of the room polygon.
+   */
+  public isPointInside(point: Vector2): boolean{
+    if(this.#isConvex){
+      // If the room polygon is convex, use half-plane checks
+      for(let i = 0; i < this.#vertices.length; i++){
+        // Consider two vertices p1 and p2 of the polygon
+        let p1 = this.#vertices[i];
+        let p2 = this.#vertices[(i + 1) % this.#vertices.length];
+
+        // Create two vectors:
+        // v1 goes from the point to the edge at p1
+        // v2 lies on the edge and goes counterclockwise on the polygon
+        let v1 = diff(p1, point);
+        let v2 = diff(p2, p1);
+
+        // If the point is inside the polygon, the cross product of v1 and v2 will always be non-negative
+        if(cross(v1, v2) < 0){
+          return false;
+        }
+      }
+
+      // No negative cross product is found, so the point lies inside the polygon
+      return true;
+    }else{
+      // If the room polygon is concave, use the winding number method
+      let windingAngle = 0;
+
+      for(let i = 0; i < this.#vertices.length; i++){
+        // Consider two vertices p1 and p2 of the polygon
+        let p1 = this.#vertices[i];
+        let p2 = this.#vertices[(i + 1) % this.#vertices.length];
+
+        // Create two vectors:
+        // v1 goes from the point to p1
+        // v2 goes from the point to p2
+        let v1 = diff(p1, point);
+        let v2 = diff(p2, point);
+
+        // If the point lies on the edge between p1 and p2, the point is considered inside
+        // This check is performed by first checking that the point is collinear with p1 and p2,
+        // then doing a bounding box check to make sure the point is within p1 and p2
+        if(
+          cross(v1, v2) === 0
+          && Math.min(v1.x, v2.x) <= point.x && point.x <= Math.max(v1.x, v2.x)
+          && Math.min(v1.y, v2.y) <= point.y && point.y <= Math.max(v1.y, v2.y)
+        ){
+          return true;
+        }
+
+        // Compute the angle between v1 and v2
+        let angle = Math.atan2(v2.y, v2.x) - Math.atan2(v1.y, v1.x);
+        if(angle > Math.PI){
+          angle -= 2 * Math.PI;
+        }
+        if(angle < -Math.PI){
+          angle += 2 * Math.PI;
+        }
+
+        // Add the angle to the cumulative winding angle
+        windingAngle += angle;
+      }
+      
+      // The point is inside the polygon if the winding number is 1
+      return Math.floor(windingAngle / (2 * Math.PI)) === 1;
+    }
   }
 
   /**

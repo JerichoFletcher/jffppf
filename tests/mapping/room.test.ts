@@ -71,4 +71,32 @@ describe("Room class test", () => {
       expect(room.getVertex(i)).toStrictEqual(vert[vert.length - i - 1]);
     }
   });
+
+  test("Interior point detection for convex rooms", () => {
+    let room = new Room(
+      { x: 3, y: 3 },
+      { x: 5, y: 0 },
+      { x: 0, y: 0 },
+      { x: 0, y: 5 },
+    );
+
+    expect(room.isPointInside({ x: 0, y: 2 })).toBe(true);
+    expect(room.isPointInside({ x: 2, y: 3 })).toBe(true);
+    expect(room.isPointInside({ x: 5, y: 4 })).toBe(false);
+  });
+
+  test("Interior point detection for concave rooms", () => {
+    let room = new Room(
+      { x: 0, y: 0 },
+      { x: 5, y: 0 },
+      { x: 5, y: 5 },
+      { x: 0, y: 5 },
+      { x: 4, y: 1 },
+      { x: 0, y: 3 },
+    );
+
+    expect(room.isPointInside({ x: 0, y: 1 })).toBe(true);
+    expect(room.isPointInside({ x: 3, y: 3 })).toBe(true);
+    expect(room.isPointInside({ x: 0, y: 4 })).toBe(false);
+  });
 });
