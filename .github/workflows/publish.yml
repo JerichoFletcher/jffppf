@@ -16,22 +16,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: 'https://registry.npmjs.org'
       - name: Publish to NPM
-        run: npm publish
+        run: npx can-npm-publish && npm publish || echo "Cannot publish"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Retrieve package version
         run: node -p -e '`PACKAGE_VERSION=${require("./package.json").version}`' >> $GITHUB_ENV
-      # - name: Create Git tag
-      #   uses: pkgdeps/git-tag-action@v3
-      #   with:
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      #     github_repo: ${{ github.repository }}
-      #     git_commit_sha: ${{ github.sha }}
-      #     version: ${{ env.PACKAGE_VERSION }}
-      #     git_tag_prefix: "v"
       - name: Create Github Release
         uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: "v${{ env.PACKAGE_VERSION }}"
-          release_name: "v${{ env.PACKAGE_VERSION }}"
+          tag_name: 'v${{ env.PACKAGE_VERSION }}'
+          release_name: 'v${{ env.PACKAGE_VERSION }}'
