@@ -16,6 +16,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: 'https://registry.npmjs.org'
       - name: Publish to NPM
         run: npm publish
         env:
@@ -32,6 +33,8 @@ jobs:
       #     git_tag_prefix: "v"
       - name: Create Github Release
         uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: "v${{ env.PACKAGE_VERSION }}"
-          release_name: "v${{ env.PACKAGE_VERSION }}"
+          tag_name: 'v${{ env.PACKAGE_VERSION }}'
+          release_name: 'v${{ env.PACKAGE_VERSION }}'
