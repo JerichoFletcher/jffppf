@@ -1,4 +1,4 @@
-import { Vector2 } from "@/math";
+import { Vec2 } from "@/math";
 
 /**
  * Represents an arbitrary room.
@@ -9,5 +9,5 @@ export default interface Room{
    * @param point A point to check.
    * @returns Whether `point` lies within the boundary of the room.
    */
-  isPointInside(point: Vector2): boolean;
+  isPointInside(point: Vec2): boolean;
 }

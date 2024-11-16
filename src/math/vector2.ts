@@ -1,7 +1,7 @@
 /**
  * Represents a vector (or point) on the 2D surface.
  */
-export interface Vector2{
+export interface Vec2{
   /** The x-component of the vector. */
   x: number;
   /** The y-component of the vector. */
@@ -13,7 +13,7 @@ export interface Vector2{
  * @param v The vector.
  * @returns The square magnitude of `v`.
  */
-export function sqrMagnitude(v: Vector2): number{
+export function sqrMagnitude(v: Vec2): number{
   return dot(v, v);
 }
 
@@ -22,7 +22,7 @@ export function sqrMagnitude(v: Vector2): number{
  * @param v The vector.
  * @returns The magnitude of `v`.
  */
-export function magnitude(v: Vector2): number{
+export function magnitude(v: Vec2): number{
   return Math.sqrt(sqrMagnitude(v));
 }
 
@@ -31,7 +31,7 @@ export function magnitude(v: Vector2): number{
  * @param v The vector.
  * @returns The angle between `v` and the X-axis.
  */
-export function angle(v: Vector2): number{
+export function angle(v: Vec2): number{
   return Math.atan2(v.y, v.x);
 }
 
@@ -41,7 +41,7 @@ export function angle(v: Vector2): number{
  * @param v2 The second vector.
  * @returns The angle from `v1` to `v2`.
  */
-export function angleBetween(v1: Vector2, v2: Vector2): number{
+export function angleBetween(v1: Vec2, v2: Vec2): number{
   let theta = angle(v2) - angle(v1);
 
   // Normalize the angle difference to the range [-PI, PI]
@@ -61,7 +61,7 @@ export function angleBetween(v1: Vector2, v2: Vector2): number{
  * @param v2 The second vector.
  * @returns The sum of `v1` and `v2`.
  */
-export function sum(v1: Vector2, v2: Vector2): Vector2{
+export function sum(v1: Vec2, v2: Vec2): Vec2{
   return { x: v1.x + v2.x, y: v1.y + v2.y };
 }
 
@@ -71,7 +71,7 @@ export function sum(v1: Vector2, v2: Vector2): Vector2{
  * @param v2 The second vector.
  * @returns The difference between `v1` and `v2`, i.e. a vector from the endpoint of `v2` to the endpoint of `v1`.
  */
-export function diff(v1: Vector2, v2: Vector2): Vector2{
+export function diff(v1: Vec2, v2: Vec2): Vec2{
   return { x: v1.x - v2.x, y: v1.y - v2.y };
 }
 
@@ -81,7 +81,7 @@ export function diff(v1: Vector2, v2: Vector2): Vector2{
  * @param v2 The second vector.
  * @returns The dot product of `v1` and `v2`.
  */
-export function dot(v1: Vector2, v2: Vector2): number{
+export function dot(v1: Vec2, v2: Vec2): number{
   return v1.x * v2.x + v1.y * v2.y;
 }
 
@@ -91,6 +91,6 @@ export function dot(v1: Vector2, v2: Vector2): number{
  * @param v2 The second vector.
  * @returns The cross product of `v1` and `v2`.
  */
-export function cross(v1: Vector2, v2: Vector2): number{
+export function cross(v1: Vec2, v2: Vec2): number{
   return v1.x * v2.y - v2.x * v1.y;
 }

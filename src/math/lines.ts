@@ -1,4 +1,4 @@
-import { cross, diff, Vector2 } from "./vector2";
+import { cross, diff, Vec2 } from "./vector2";
 
 /**
  * Compute the orientation of three points in a 2D plane.
@@ -9,7 +9,7 @@ import { cross, diff, Vector2 } from "./vector2";
  * Positive values denote counterclockwise orientations. Negative values denote clockwise orientations.
  * A value of zero means the three points are collinear (lying on a common straight line).
  */
-export function orientation(a: Vector2, b: Vector2, c: Vector2): number{
+export function orientation(a: Vec2, b: Vec2, c: Vec2): number{
   return cross(diff(b, a), diff(c, b));
 }
 
@@ -20,7 +20,7 @@ export function orientation(a: Vector2, b: Vector2, c: Vector2): number{
  * @param b The second corner of the bounding box.
  * @returns Whether `P` is within the bounding box `AB`.
  */
-export function isWithinPoints(p: Vector2, a: Vector2, b: Vector2): boolean{
+export function isWithinPoints(p: Vec2, a: Vec2, b: Vec2): boolean{
   return Math.min(a.x, b.x) <= p.x && p.x <= Math.max(a.x, b.x)
     && Math.min(a.y, b.y) <= p.y && p.y <= Math.max(a.y, b.y);
 }
@@ -34,7 +34,7 @@ export function isWithinPoints(p: Vector2, a: Vector2, b: Vector2): boolean{
  * @param top The top boundary of the area.
  * @returns Whether `P` is within the given bounds.
  */
-export function isWithinBoundingBox(p: Vector2, left: number, right: number, bottom: number, top: number): boolean{
+export function isWithinBoundingBox(p: Vec2, left: number, right: number, bottom: number, top: number): boolean{
   return left <= p.x && p.x <= right
     && bottom <= p.y && p.y <= top;
 }
@@ -46,7 +46,7 @@ export function isWithinBoundingBox(p: Vector2, left: number, right: number, bot
  * @param b The second end of the segment.
  * @returns Whether `P` lies on the line segment `AB`.
  */
-export function liesOnSegment(p: Vector2, a: Vector2, b: Vector2): boolean{
+export function liesOnSegment(p: Vec2, a: Vec2, b: Vec2): boolean{
   // This check is performed by first checking that P is collinear with A and B,
   // then doing a bounding box check to make sure P is within A and B
   return orientation(p, a, b) === 0 && isWithinPoints(p, a, b);
@@ -60,7 +60,7 @@ export function liesOnSegment(p: Vector2, a: Vector2, b: Vector2): boolean{
  * @param v The second end of the second segment.
  * @returns Whether the line segments `ab` and `uv` intersect.
  */
-export function segmentsIntersect(a: Vector2, b: Vector2, u: Vector2, v: Vector2): boolean{
+export function segmentsIntersect(a: Vec2, b: Vec2, u: Vec2, v: Vec2): boolean{
   // AB and UV intersect if the orientations of ABU and ABV differ, and the orientations of UVA and UVB also differ
   let oABU = orientation(a, b, u);
   let oABV = orientation(a, b, v);

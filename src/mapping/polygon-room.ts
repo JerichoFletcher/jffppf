@@ -1,26 +1,18 @@
-import {
-  Vector2,
-  diff,
-  cross,
-  liesOnSegment,
-  orientation,
-  angleBetween,
-  segmentsIntersect
-} from "@/math";
+import { Vector2, Vec2, Lines } from "@/math";
 import Room from "./room";
 
 /**
  * Represents a polygonal room.
  */
 export default class PolygonRoom implements Room{
-  #vertices: Vector2[];
+  #vertices: Vec2[];
   #isConvex: boolean;
 
   /**
    * Constructs a room representation from a vertex list.
    * @param vertices The vertices (i.e. corners) of the room.
    */
-  constructor(...vertices: Vector2[]){
+  constructor(...vertices: Vec2[]){
     // Check first if there are enough vertices for a valid polygon
     if(vertices.length < 3){
       throw new Error("Polygonal room shape is invalid (not enough vertices)");
@@ -47,13 +39,13 @@ export default class PolygonRoom implements Room{
         // The polygon is invalid if it self intersects
         let q1 = vertices[j];
         let q2 = vertices[(j + 1) % vertices.length];
-        if(segmentsIntersect(p1, p2, q1, q2)){
+        if(Lines.segmentsIntersect(p1, p2, q1, q2)){
           throw new Error("Polygonal room shape is invalid (self-intersection present)");
         }
       }
 
       // Compute the signed area of the segment
-      let segmentGaussArea = cross(p1, p2);
+      let segmentGaussArea = Vector2.cross(p1, p2);
       gaussArea += segmentGaussArea;
 
       // Perform a convexity check if the convexity has not been determined yet
@@ -62,7 +54,7 @@ export default class PolygonRoom implements Room{
       }
 
       // Compute the orientation between the edges
-      let segmentOrientation = orientation(p1, p2, p3);
+      let segmentOrientation = Lines.orientation(p1, p2, p3);
 
       // If the two edges are not collinear...
       if(segmentOrientation !== 0){
@@ -96,7 +88,7 @@ export default class PolygonRoom implements Room{
    * @param point A point to check.
    * @returns Whether `point` lies within the boundary of the room polygon.
    */
-  public isPointInside(point: Vector2): boolean{
+  public isPointInside(point: Vec2): boolean{
     if(this.#isConvex){
       // If the room polygon is convex, use half-plane checks
       for(let i = 0; i < this.#vertices.length; i++){
@@ -104,7 +96,7 @@ export default class PolygonRoom implements Room{
         let p2 = this.#vertices[(i + 1) % this.#vertices.length];
 
         // If the point along with p1 and p2 are in a clockwise orientation, the point is outside the polygon
-        if(orientation(point, p1, p2) < 0){
+        if(Lines.orientation(point, p1, p2) < 0){
           return false;
         }
       }
@@ -120,18 +112,18 @@ export default class PolygonRoom implements Room{
         let p2 = this.#vertices[(i + 1) % this.#vertices.length];
         
         // If the point lies on the edge between p1 and p2, the point is considered inside
-        if(liesOnSegment(point, p1, p2)){
+        if(Lines.liesOnSegment(point, p1, p2)){
           return true;
         }
         
         // Create two vectors:
         // v1 goes from the point to p1
         // v2 goes from the point to p2
-        let v1 = diff(p1, point);
-        let v2 = diff(p2, point);
+        let v1 = Vector2.diff(p1, point);
+        let v2 = Vector2.diff(p2, point);
 
         // Add the angle between v1 and v2 to the cumulative winding angle
-        let theta = angleBetween(v1, v2);
+        let theta = Vector2.angleBetween(v1, v2);
         windingAngle += theta;
       }
       
@@ -145,7 +137,7 @@ export default class PolygonRoom implements Room{
    * @param index The index that points to the vertex.
    * @returns A copy of the vertex.
    */
-  public getVertex(index: number): Vector2{
+  public getVertex(index: number): Vec2{
     // To prevent modification, return a copy of the point instead
     let temp = this.#vertices[index];
     return { x: temp.x, y: temp.y };

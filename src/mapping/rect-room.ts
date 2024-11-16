@@ -1,4 +1,4 @@
-import { isWithinBoundingBox, Vector2 } from "@/math";
+import { Vector2, Vec2, Lines } from "@/math";
 import Room from "./room";
 
 /**
@@ -15,7 +15,7 @@ export default class RectRoom implements Room{
    * @param p1 The first corner point.
    * @param p2 The second corner point.
    */
-  constructor(p1: Vector2, p2: Vector2){
+  constructor(p1: Vec2, p2: Vec2){
     // The room is invalid if the points lie on the same horizontal or vertical line
     if(p1.x === p2.x || p1.y === p2.y){
       throw new Error("Rectangular room shape is invalid (would degenerate into a line segment)");
@@ -28,7 +28,7 @@ export default class RectRoom implements Room{
     this.#topBound = Math.max(p1.y, p2.y);
   }
 
-  public isPointInside(point: Vector2): boolean {
-    return isWithinBoundingBox(point, this.#leftBound, this.#rightBound, this.#bottomBound, this.#topBound);
+  public isPointInside(point: Vec2): boolean {
+    return Lines.isWithinBoundingBox(point, this.#leftBound, this.#rightBound, this.#bottomBound, this.#topBound);
   }
 }
