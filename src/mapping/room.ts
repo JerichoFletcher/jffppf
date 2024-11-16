@@ -1,4 +1,12 @@
-import { Vector2, diff, dot, cross } from "./vector2";
+import {
+  Vector2,
+  diff,
+  cross,
+  angle,
+  liesOnSegment,
+  orientation,
+  angleBetween
+} from "@/math";
 
 /**
  * Represents a room.
@@ -23,8 +31,8 @@ export default class Room{
     this.#isConvex = true;
 
     // Determine convexity and winding order
-    let crossSign = 0, convexityCheck = true;
-    let signedArea = 0;
+    let orientationSign = 0, convexityCheck = true;
+    let gaussArea = 0;
 
     for(let i = 0; i < vertices.length; i++){
       // Consider the next two edges of the polygon
@@ -32,30 +40,27 @@ export default class Room{
       let p2 = vertices[(i + 1) % vertices.length];
       let p3 = vertices[(i + 2) % vertices.length];
 
-      let v1 = diff(p2, p1);
-      let v2 = diff(p3, p2);
-
       // Compute the signed area of the segment
-      let localSignedArea = cross(p1, p2);
-      signedArea += localSignedArea;
+      let segmentGaussArea = cross(p1, p2);
+      gaussArea += segmentGaussArea;
 
       // Perform a convexity check if the convexity has not been determined yet
       if(!convexityCheck){
         continue;
       }
 
-      // Compute the cross product between the edges
-      let localCross = cross(v1, v2);
+      // Compute the orientation between the edges
+      let segmentOrientation = orientation(p1, p2, p3);
 
       // If the two edges are not collinear...
-      if(localCross !== 0){
-        let localCrossSign = Math.sign(localCross);
+      if(segmentOrientation !== 0){
+        let localCrossSign = Math.sign(segmentOrientation);
         
-        if(crossSign === 0){
+        if(orientationSign === 0){
           // If this is the first non-collinear edge pair, set the reference sign to the sign of the current cross product
-          crossSign = localCrossSign;
+          orientationSign = localCrossSign;
 
-        }else if(crossSign !== localCrossSign){
+        }else if(orientationSign !== localCrossSign){
           // If the signs don't match, the polygon is concave at the point p2, so the check can be stopped
           this.#isConvex = false;
           convexityCheck = false;
@@ -64,17 +69,17 @@ export default class Room{
     }
 
     // If the signed area of the polygon is zero, the polygon is invalid
-    if(signedArea === 0){
+    if(gaussArea === 0){
       throw new Error("Room shape is invalid (signed area is zero)");
     }
 
     // If the signed area is negative, the vertices are ordered clockwise; transform the order to counterclockwise
-    if(signedArea < 0){
+    if(gaussArea < 0){
       this.#vertices.reverse();
     }
 
     // The area of the polygon is half the absolute value of the shoelace area
-    this.#area = Math.abs(signedArea / 2);
+    this.#area = Math.abs(gaussArea / 2);
   }
 
   /**
@@ -86,61 +91,39 @@ export default class Room{
     if(this.#isConvex){
       // If the room polygon is convex, use half-plane checks
       for(let i = 0; i < this.#vertices.length; i++){
-        // Consider two vertices p1 and p2 of the polygon
         let p1 = this.#vertices[i];
         let p2 = this.#vertices[(i + 1) % this.#vertices.length];
 
-        // Create two vectors:
-        // v1 goes from the point to the edge at p1
-        // v2 lies on the edge and goes counterclockwise on the polygon
-        let v1 = diff(p1, point);
-        let v2 = diff(p2, p1);
-
-        // If the point is inside the polygon, the cross product of v1 and v2 will always be non-negative
-        if(cross(v1, v2) < 0){
+        // If the point along with p1 and p2 are in a clockwise orientation, the point is outside the polygon
+        if(orientation(point, p1, p2) < 0){
           return false;
         }
       }
 
-      // No negative cross product is found, so the point lies inside the polygon
+      // The point lies inside the polygon since it passes all checks against every vertex
       return true;
     }else{
       // If the room polygon is concave, use the winding number method
       let windingAngle = 0;
 
       for(let i = 0; i < this.#vertices.length; i++){
-        // Consider two vertices p1 and p2 of the polygon
         let p1 = this.#vertices[i];
         let p2 = this.#vertices[(i + 1) % this.#vertices.length];
-
+        
+        // If the point lies on the edge between p1 and p2, the point is considered inside
+        if(liesOnSegment(point, p1, p2)){
+          return true;
+        }
+        
         // Create two vectors:
         // v1 goes from the point to p1
         // v2 goes from the point to p2
         let v1 = diff(p1, point);
         let v2 = diff(p2, point);
 
-        // If the point lies on the edge between p1 and p2, the point is considered inside
-        // This check is performed by first checking that the point is collinear with p1 and p2,
-        // then doing a bounding box check to make sure the point is within p1 and p2
-        if(
-          cross(v1, v2) === 0
-          && Math.min(v1.x, v2.x) <= point.x && point.x <= Math.max(v1.x, v2.x)
-          && Math.min(v1.y, v2.y) <= point.y && point.y <= Math.max(v1.y, v2.y)
-        ){
-          return true;
-        }
-
-        // Compute the angle between v1 and v2
-        let angle = Math.atan2(v2.y, v2.x) - Math.atan2(v1.y, v1.x);
-        if(angle > Math.PI){
-          angle -= 2 * Math.PI;
-        }
-        if(angle < -Math.PI){
-          angle += 2 * Math.PI;
-        }
-
-        // Add the angle to the cumulative winding angle
-        windingAngle += angle;
+        // Add the angle between v1 and v2 to the cumulative winding angle
+        let theta = angleBetween(v1, v2);
+        windingAngle += theta;
       }
       
       // The point is inside the polygon if the winding number is 1

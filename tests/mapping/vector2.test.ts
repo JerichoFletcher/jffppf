@@ -1,4 +1,4 @@
-import * as Vector2 from "@/mapping/vector2";
+import * as Vector2 from "@/math/vector2";
 
 describe("Vector methods test", () => {
   test("Vector addition", () => {

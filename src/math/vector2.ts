@@ -27,6 +27,35 @@ export function magnitude(v: Vector2): number{
 }
 
 /**
+ * Computes the angle of a vector to the X-axis.
+ * @param v The vector.
+ * @returns The angle between `v` and the X-axis.
+ */
+export function angle(v: Vector2): number{
+  return Math.atan2(v.y, v.x);
+}
+
+/**
+ * Computes the signed angle between two vectors.
+ * @param v1 The first vector.
+ * @param v2 The second vector.
+ * @returns The angle from `v1` to `v2`.
+ */
+export function angleBetween(v1: Vector2, v2: Vector2): number{
+  let theta = angle(v2) - angle(v1);
+
+  // Normalize the angle difference to the range [-PI, PI]
+  if(theta > Math.PI){
+    theta -= 2 * Math.PI;
+  }
+  if(theta < -Math.PI){
+    theta += 2 * Math.PI;
+  }
+
+  return theta;
+}
+
+/**
  * Computes the sum of two vectors.
  * @param v1 The first vector.
  * @param v2 The second vector.
