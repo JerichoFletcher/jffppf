@@ -20,4 +20,14 @@ describe("Vector methods test", () => {
   test("Vector magnitude", () => {
     expect(Vector2.magnitude({ x: 3, y: 4 })).toBeCloseTo(5);
   });
+
+  test("Vector angle", () => {
+    expect(Vector2.angle({ x: 3, y: 3 })).toBeCloseTo(Math.PI / 4);
+    expect(Vector2.angle({ x: 3, y: -3 })).toBeCloseTo(-Math.PI / 4);
+  });
+  
+  test("Vector angle between", () => {
+    expect(Vector2.angleBetween({ x: 3, y: -3 }, { x: 3, y: 3 })).toBeCloseTo(Math.PI / 2);
+    expect(Vector2.angleBetween({ x: 3, y: 3 }, { x: 3, y: -3 })).toBeCloseTo(-Math.PI / 2);
+  });
 });

@@ -74,6 +74,7 @@ describe("PolygonRoom class test", () => {
     expect(room.isPointInside({ x: 0, y: 2 })).toBe(true);
     expect(room.isPointInside({ x: 2, y: 3 })).toBe(true);
     expect(room.isPointInside({ x: 5, y: 4 })).toBe(false);
+    expect(room.isPointInside({ x: 8, y: 8 })).toBe(false);
   });
 
   test("Interior point detection for concave rooms", () => {
@@ -89,5 +90,6 @@ describe("PolygonRoom class test", () => {
     expect(room.isPointInside({ x: 0, y: 1 })).toBe(true);
     expect(room.isPointInside({ x: 3, y: 3 })).toBe(true);
     expect(room.isPointInside({ x: 0, y: 4 })).toBe(false);
+    expect(room.isPointInside({ x: 8, y: 8 })).toBe(false);
   });
 });
