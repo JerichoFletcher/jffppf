@@ -4,7 +4,10 @@
   "description": "Simple floor plan representation and navigation using pathfinding algorithms.",
   "main": "lib/index.js",
   "scripts": {
-    "test": "jest"
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "clean": "node scripts/clean.js"
   },
   "repository": {
     "type": "git",
