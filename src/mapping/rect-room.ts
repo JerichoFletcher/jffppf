@@ -5,6 +5,7 @@ import Room from "./room";
  * Represents a rectangular room.
  */
 export default class RectRoom implements Room{
+  #centroid: Vec2;
   #leftBound: number;
   #rightBound: number;
   #bottomBound: number;
@@ -26,9 +27,19 @@ export default class RectRoom implements Room{
     this.#rightBound = Math.max(p1.x, p2.x),
     this.#bottomBound = Math.min(p1.y, p2.y),
     this.#topBound = Math.max(p1.y, p2.y);
+
+    // Precompute the centroid
+    this.#centroid = {
+      x: (this.#leftBound + this.#rightBound) / 2,
+      y: (this.#bottomBound + this.#topBound) / 2
+    };
   }
 
-  public isPointInside(point: Vec2): boolean {
+  public isPointInside(point: Vec2): boolean{
     return Lines.isWithinBoundingBox(point, this.#leftBound, this.#rightBound, this.#bottomBound, this.#topBound);
+  }
+
+  public get centroid(): Vec2{
+    return this.#centroid;
   }
 }

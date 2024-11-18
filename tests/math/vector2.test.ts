@@ -9,6 +9,14 @@ describe("Vector methods test", () => {
     expect(Vector2.diff({ x: 1, y: 4 }, { x: 3, y: 2 })).toStrictEqual<Vector2.Vec2>({ x: -2, y: 2 });
   });
 
+  test("Vector scalar product", () => {
+    expect(Vector2.scl({ x: 2, y: 3 }, 2)).toStrictEqual<Vector2.Vec2>({ x: 4, y: 6 });
+    expect(Vector2.scl({ x: -1, y: 5 }, 3)).toStrictEqual<Vector2.Vec2>({ x: -3, y: 15 });
+    expect(Vector2.scl({ x: -3, y: 2 }, -1)).toStrictEqual<Vector2.Vec2>({ x: 3, y: -2 });
+    expect(Vector2.scl({ x: 4, y: -7 }, 0).x).toBeCloseTo(0);
+    expect(Vector2.scl({ x: 4, y: -7 }, 0).y).toBeCloseTo(0);
+  });
+
   test("Vector dot product", () => {
     expect(Vector2.dot({ x: 1, y: 4 }, { x: 3, y: 2 })).toBeCloseTo(11);
   });
@@ -19,6 +27,8 @@ describe("Vector methods test", () => {
 
   test("Vector magnitude", () => {
     expect(Vector2.magnitude({ x: 3, y: 4 })).toBeCloseTo(5);
+    expect(Vector2.magnitude({ x: -12, y: 5 })).toBeCloseTo(13);
+    expect(Vector2.magnitude({ x: 0, y: 0 })).toBeCloseTo(0);
   });
 
   test("Vector angle", () => {

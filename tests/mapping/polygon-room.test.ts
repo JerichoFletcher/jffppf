@@ -92,4 +92,18 @@ describe("PolygonRoom class test", () => {
     expect(room.isPointInside({ x: 0, y: 4 })).toBe(false);
     expect(room.isPointInside({ x: 8, y: 8 })).toBe(false);
   });
+
+  test("Centroid calculation for polygonal rooms", () => {
+    let room = new PolygonRoom(
+      { x: 0, y: 0 },
+      { x: 2, y: 0 },
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+      { x: 0, y: 4 },
+    );
+    let o = room.centroid;
+
+    expect(o.x).toBeCloseTo(1.6);
+    expect(o.y).toBeCloseTo(2);
+  });
 });

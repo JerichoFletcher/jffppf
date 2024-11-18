@@ -10,4 +10,9 @@ export default interface Room{
    * @returns Whether `point` lies within the boundary of the room.
    */
   isPointInside(point: Vec2): boolean;
+
+  /**
+   * The centroid of the room shape.
+   */
+  get centroid(): Vec2;
 }

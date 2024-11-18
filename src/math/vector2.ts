@@ -76,6 +76,16 @@ export function diff(v1: Vec2, v2: Vec2): Vec2{
 }
 
 /**
+ * Scales a vector by a scalar value.
+ * @param v The vector.
+ * @param k The scaling factor.
+ * @returns The vector `v` scaled by `k`.
+ */
+export function scl(v: Vec2, k: number): Vec2{
+  return { x: k * v.x, y: k * v.y };
+}
+
+/**
  * Computes the dot product of two vectors.
  * @param v1 The first vector.
  * @param v2 The second vector.

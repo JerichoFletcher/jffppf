@@ -14,4 +14,18 @@ describe("RectRoom class test", () => {
     expect(room.isPointInside({ x: 6, y: 3 })).toBe(false);
     expect(room.isPointInside({ x: -1, y: 7 })).toBe(false);
   });
+
+  test("Centroid calculation for rectangular rooms", () => {
+    let room = new RectRoom({ x: 0, y: 0 }, { x: 4, y: 4 });
+    let o = room.centroid;
+
+    expect(o.x).toBeCloseTo(2);
+    expect(o.y).toBeCloseTo(2);
+
+    room = new RectRoom({ x: 0, y: 0 }, { x: -5, y: 5 });
+    o = room.centroid;
+
+    expect(o.x).toBeCloseTo(-2.5);
+    expect(o.y).toBeCloseTo(2.5);
+  });
 });

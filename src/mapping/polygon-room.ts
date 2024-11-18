@@ -6,6 +6,7 @@ import Room from "./room";
  */
 export default class PolygonRoom implements Room{
   #vertices: Vec2[];
+  #centroid: Vec2;
   #isConvex: boolean;
 
   /**
@@ -19,6 +20,7 @@ export default class PolygonRoom implements Room{
     }
 
     this.#vertices = [...vertices];
+    this.#centroid = { x: 0, y: 0 };
     this.#isConvex = true;
 
     // Determine convexity and winding order
@@ -30,6 +32,9 @@ export default class PolygonRoom implements Room{
       let p1 = vertices[i];
       let p2 = vertices[(i + 1) % vertices.length];
       let p3 = vertices[(i + 2) % vertices.length];
+      
+      // Sum up the vertex positions for centroid precalculation
+      this.#centroid = Vector2.sum(this.#centroid, p1);
 
       // Check if the segment intersects another segment of the polygon
       for(let j = i + 2; j < vertices.length; j++){
@@ -71,23 +76,21 @@ export default class PolygonRoom implements Room{
         }
       }
     }
-
+    
     // If the signed area of the polygon is zero, the polygon is invalid
     if(gaussArea === 0){
       throw new Error("Polygonal room shape is invalid (signed area is zero)");
     }
-
+    
     // If the signed area is negative, the vertices are ordered clockwise; transform the order to counterclockwise
     if(gaussArea < 0){
       this.#vertices.reverse();
     }
+
+    // Precompute the polygon centroid
+    this.#centroid = Vector2.scl(this.#centroid, 1 / this.#vertices.length);
   }
 
-  /**
-   * Check if a point is inside of the room.
-   * @param point A point to check.
-   * @returns Whether `point` lies within the boundary of the room polygon.
-   */
   public isPointInside(point: Vec2): boolean{
     if(this.#isConvex){
       // If the room polygon is convex, use half-plane checks
@@ -130,6 +133,10 @@ export default class PolygonRoom implements Room{
       // The point is inside the polygon if the winding number is 1
       return Math.floor(windingAngle / (2 * Math.PI)) === 1;
     }
+  }
+
+  public get centroid(): Vec2{
+    return this.#centroid;
   }
 
   /**
