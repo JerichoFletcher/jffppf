@@ -12,7 +12,7 @@ describe("Door link test", () => {
     )).toThrow();
   });
 
-  test("DoorLink.isConnected should return true on rooms connected by the link", () => {
+  test("DoorLink.getPath should return a path when rooms are connected by the link", () => {
     let room1 = new RectRoom({ x: 0, y: 0 }, { x: 2, y: 2 });
     let room2 = new RectRoom({ x: 2.5, y: 0 }, { x: 4.5, y: 2 });
     let link = new DoorLink(
@@ -20,11 +20,11 @@ describe("Door link test", () => {
       { point: { x: 2.5, y: 1 }, room: room2 },
     );
 
-    expect(link.isConnected(room1, room2)).toBe(true);
-    expect(link.isConnected(room2, room1)).toBe(true);
+    expect(link.getPath(room1, room2)).toBeTruthy();
+    expect(link.getPath(room2, room1)).toBeTruthy();
   });
 
-  test("DoorLink.isConnected should return false on rooms not connected by the link", () => {
+  test("DoorLink.getPath should return no paths when rooms are not connected by the link", () => {
     let room1 = new RectRoom({ x: 0, y: 0 }, { x: 2, y: 2 });
     let room2 = new RectRoom({ x: 2.5, y: 0 }, { x: 4.5, y: 2 });
     let room3 = new RectRoom({ x: 0, y: 2.5 }, { x: 4.5, y: 4.5 });
@@ -33,9 +33,9 @@ describe("Door link test", () => {
       { point: { x: 2.5, y: 1 }, room: room2 },
     );
 
-    expect(link.isConnected(room1, room3)).toBe(false);
-    expect(link.isConnected(room3, room1)).toBe(false);
-    expect(link.isConnected(room2, room3)).toBe(false);
-    expect(link.isConnected(room3, room2)).toBe(false);
+    expect(link.getPath(room1, room3)).toBeNull();
+    expect(link.getPath(room3, room1)).toBeNull();
+    expect(link.getPath(room2, room3)).toBeNull();
+    expect(link.getPath(room3, room2)).toBeNull();
   });
 });

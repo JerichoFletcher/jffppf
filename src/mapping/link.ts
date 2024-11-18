@@ -1,3 +1,4 @@
+import { Vec2 } from "@/math";
 import Room from "./room";
 
 /**
@@ -24,10 +25,15 @@ export default abstract class Link{
   }
 
   /**
-   * Checks whether this link allows navigation from one room to another.
+   * The cost of this link for pathfinding purposes.
+   */
+  abstract get cost(): number;
+
+  /**
+   * Gets the path this link connects from one room to another.
    * @param src The source room.
    * @param dest The destination room.
-   * @returns Whether this link provides a navigation path directly connecting `src` to `dest`.
+   * @returns The navigation path directly connecting `src` to `dest`, if one exists.
    */
-  abstract isConnected(src: Room, dest: Room): boolean;
+  abstract getPath(src: Room, dest: Room): Vec2[] | null;
 }
