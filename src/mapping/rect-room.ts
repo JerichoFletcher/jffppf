@@ -17,7 +17,7 @@ export default class RectRoom extends Room{
    * @param p2 The second corner point.
    * @param id The identifier of the room.
    */
-  constructor(p1: Vec2, p2: Vec2, id?: string){
+  public constructor(p1: Vec2, p2: Vec2, id?: string){
     // The room is invalid if the points lie on the same horizontal or vertical line
     if(p1.x === p2.x || p1.y === p2.y){
       throw new Error("Rectangular room shape is invalid (would degenerate into a line segment)");

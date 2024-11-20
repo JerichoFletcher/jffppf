@@ -12,26 +12,26 @@ export default abstract class Room{
    * Creates an abstract room with the given ID.
    * @param id The identifier of the room.
    */
-  constructor(id?: string){
+  public constructor(id?: string){
     this.#id = id || `room_${Room.#incrId++}`;
   }
   
   /**
    * The unique identifier of the room.
   */
-  get id(): string{
+  public get id(): string{
     return this.#id;
   }
   
   /**
    * The centroid of the room shape.
   */
-  abstract get centroid(): Vec2;
+  public abstract get centroid(): Vec2;
  
   /**
   * Check if a point is inside of the room.
   * @param point A point to check.
   * @returns Whether `point` lies within the boundary of the room.
   */
-  abstract isPointInside(point: Vec2): boolean;
+  public abstract isPointInside(point: Vec2): boolean;
 }

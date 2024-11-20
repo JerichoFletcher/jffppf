@@ -14,7 +14,7 @@ export default class PolygonRoom extends Room{
    * @param vertices The vertices (i.e. corners) of the room.
    * @param id The identifier of the room.
    */
-  constructor(vertices: Vec2[], id?: string){
+  public constructor(vertices: Vec2[], id?: string){
     // Check first if there are enough vertices for a valid polygon
     if(vertices.length < 3){
       throw new Error("Polygonal room shape is invalid (not enough vertices)");
@@ -32,9 +32,9 @@ export default class PolygonRoom extends Room{
 
     for(let i = 0; i < vertices.length; i++){
       // Consider the next two edges of the polygon
-      let p1 = vertices[i];
-      let p2 = vertices[(i + 1) % vertices.length];
-      let p3 = vertices[(i + 2) % vertices.length];
+      const p1 = vertices[i];
+      const p2 = vertices[(i + 1) % vertices.length];
+      const p3 = vertices[(i + 2) % vertices.length];
       
       // Sum up the vertex positions for centroid precalculation
       this.#centroid = Vector2.sum(this.#centroid, p1);
@@ -45,15 +45,15 @@ export default class PolygonRoom extends Room{
         if(i === 0 && j === vertices.length - 1)continue;
 
         // The polygon is invalid if it self intersects
-        let q1 = vertices[j];
-        let q2 = vertices[(j + 1) % vertices.length];
+        const q1 = vertices[j];
+        const q2 = vertices[(j + 1) % vertices.length];
         if(Lines.segmentsIntersect(p1, p2, q1, q2)){
           throw new Error("Polygonal room shape is invalid (self-intersection present)");
         }
       }
 
       // Compute the signed area of the segment
-      let segmentGaussArea = Vector2.cross(p1, p2);
+      const segmentGaussArea = Vector2.cross(p1, p2);
       gaussArea += segmentGaussArea;
 
       // Perform a convexity check if the convexity has not been determined yet
@@ -62,11 +62,11 @@ export default class PolygonRoom extends Room{
       }
 
       // Compute the orientation between the edges
-      let segmentOrientation = Lines.orientation(p1, p2, p3);
+      const segmentOrientation = Lines.orientation(p1, p2, p3);
 
       // If the two edges are not collinear...
       if(segmentOrientation !== 0){
-        let localCrossSign = Math.sign(segmentOrientation);
+        const localCrossSign = Math.sign(segmentOrientation);
         
         if(orientationSign === 0){
           // If this is the first non-collinear edge pair, set the reference sign to the sign of the current cross product
@@ -105,7 +105,7 @@ export default class PolygonRoom extends Room{
   */
   public getVertex(index: number): Vec2{
     // To prevent modification, return a copy of the point instead
-    let temp = this.#vertices[index];
+    const temp = this.#vertices[index];
     return { x: temp.x, y: temp.y };
   }
   
@@ -127,8 +127,8 @@ export default class PolygonRoom extends Room{
     if(this.#isConvex){
       // If the room polygon is convex, use half-plane checks
       for(let i = 0; i < this.#vertices.length; i++){
-        let p1 = this.#vertices[i];
-        let p2 = this.#vertices[(i + 1) % this.#vertices.length];
+        const p1 = this.#vertices[i];
+        const p2 = this.#vertices[(i + 1) % this.#vertices.length];
   
         // If the point along with p1 and p2 are in a clockwise orientation, the point is outside the polygon
         if(Lines.orientation(point, p1, p2) < 0){
@@ -143,8 +143,8 @@ export default class PolygonRoom extends Room{
       let windingAngle = 0;
   
       for(let i = 0; i < this.#vertices.length; i++){
-        let p1 = this.#vertices[i];
-        let p2 = this.#vertices[(i + 1) % this.#vertices.length];
+        const p1 = this.#vertices[i];
+        const p2 = this.#vertices[(i + 1) % this.#vertices.length];
         
         // If the point lies on the edge between p1 and p2, the point is considered inside
         if(Lines.liesOnSegment(point, p1, p2)){
@@ -154,11 +154,11 @@ export default class PolygonRoom extends Room{
         // Create two vectors:
         // v1 goes from the point to p1
         // v2 goes from the point to p2
-        let v1 = Vector2.diff(p1, point);
-        let v2 = Vector2.diff(p2, point);
+        const v1 = Vector2.diff(p1, point);
+        const v2 = Vector2.diff(p2, point);
   
         // Add the angle between v1 and v2 to the cumulative winding angle
-        let theta = Vector2.angleBetween(v1, v2);
+        const theta = Vector2.angleBetween(v1, v2);
         windingAngle += theta;
       }
       

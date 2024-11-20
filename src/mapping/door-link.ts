@@ -17,7 +17,7 @@ export default class DoorLink extends Link{
    * @param p2 The connected point in the second room.
    * @param id The identifier of the link.
    */
-  constructor(p1: RoomPoint, p2: RoomPoint, id?: string){
+  public constructor(p1: RoomPoint, p2: RoomPoint, id?: string){
     // Door links require that the connected points are inside their respective rooms
     if(!p1.room.isPointInside(p1.point) || !p2.room.isPointInside(p2.point)){
       throw new Error("Door link is invalid (linked points not inside the associated rooms)");

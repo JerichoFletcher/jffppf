@@ -13,21 +13,21 @@ export default abstract class Link{
    * Constructs an abstract link object.
    * @param id The identifier of the link.
    */
-  constructor(id?: string){
+  public constructor(id?: string){
     this.#id = id || `link_${Link.#incrId++}`;
   }
 
   /**
    * The unique identifier of the link.
    */
-  get id(): string{
+  public get id(): string{
     return this.#id;
   }
 
   /**
    * The cost of this link for pathfinding purposes.
    */
-  abstract get cost(): number;
+  public abstract get cost(): number;
 
   /**
    * Gets the path this link connects from one room to another.
@@ -35,5 +35,5 @@ export default abstract class Link{
    * @param dest The destination room.
    * @returns The navigation path directly connecting `src` to `dest`, if one exists.
    */
-  abstract getPath(src: Room, dest: Room): Vec2[] | null;
+  public abstract getPath(src: Room, dest: Room): Vec2[] | null;
 }

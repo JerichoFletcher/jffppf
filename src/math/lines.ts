@@ -62,10 +62,10 @@ export function liesOnSegment(p: Vec2, a: Vec2, b: Vec2): boolean{
  */
 export function segmentsIntersect(a: Vec2, b: Vec2, u: Vec2, v: Vec2): boolean{
   // AB and UV intersect if the orientations of ABU and ABV differ, and the orientations of UVA and UVB also differ
-  let oABU = orientation(a, b, u);
-  let oABV = orientation(a, b, v);
-  let oUVA = orientation(u, v, a);
-  let oUVB = orientation(u, v, b);
+  const oABU = orientation(a, b, u);
+  const oABV = orientation(a, b, v);
+  const oUVA = orientation(u, v, a);
+  const oUVB = orientation(u, v, b);
 
   if(Math.sign(oABU) !== Math.sign(oABV) && Math.sign(oUVA) !== Math.sign(oUVB)){
     return true;
