@@ -1,106 +1,125 @@
+/** Represents a 2D vector-like object type. */
+export type Vec2Like = Vec2 | { x: number, y: number };
+
 /**
  * Represents a vector (or point) on the 2D surface.
  */
-export interface Vec2{
+export class Vec2{
+  #x: number;
+  #y: number;
+
+  /**
+   * Creates a vector with the given dimension.
+   * @param x The value of the x-component.
+   * @param y The value of the y-component.
+   */
+  public constructor(x?: number, y?: number){
+    this.#x = x || 0;
+    this.#y = y || 0;
+  }
+
+  /**
+   * Creates a vector from a vector-like object.
+   * @param v A vector-like object.
+   * @returns A vector instance.
+   */
+  public static fromVec2Like(v: Vec2Like): Vec2{
+    return v instanceof Vec2 ? v : new Vec2(v.x, v.y);
+  }
+
   /** The x-component of the vector. */
-  x: number;
+  public get x(): number{
+    return this.#x;
+  }
+
   /** The y-component of the vector. */
-  y: number;
-}
-
-/**
- * Computes the square of the magnitude of a vector.
- * @param v The vector.
- * @returns The square magnitude of `v`.
- */
-export function sqrMagnitude(v: Vec2): number{
-  return dot(v, v);
-}
-
-/**
- * Computes the magnitude of a vector.
- * @param v The vector.
- * @returns The magnitude of `v`.
- */
-export function magnitude(v: Vec2): number{
-  return Math.sqrt(sqrMagnitude(v));
-}
-
-/**
- * Computes the angle of a vector to the X-axis.
- * @param v The vector.
- * @returns The angle between `v` and the X-axis.
- */
-export function angle(v: Vec2): number{
-  return Math.atan2(v.y, v.x);
-}
-
-/**
- * Computes the signed angle between two vectors.
- * @param v1 The first vector.
- * @param v2 The second vector.
- * @returns The angle from `v1` to `v2`.
- */
-export function angleBetween(v1: Vec2, v2: Vec2): number{
-  let theta = angle(v2) - angle(v1);
-
-  // Normalize the angle difference to the range [-PI, PI]
-  if(theta > Math.PI){
-    theta -= 2 * Math.PI;
-  }
-  if(theta < -Math.PI){
-    theta += 2 * Math.PI;
+  public get y(): number{
+    return this.#y;
   }
 
-  return theta;
-}
+  /**
+   * The square magnitude of this vector.
+   */
+  public get sqrMagnitude(): number{
+    return this.dot(this);
+  }
 
-/**
- * Computes the sum of two vectors.
- * @param v1 The first vector.
- * @param v2 The second vector.
- * @returns The sum of `v1` and `v2`.
- */
-export function sum(v1: Vec2, v2: Vec2): Vec2{
-  return { x: v1.x + v2.x, y: v1.y + v2.y };
-}
+  /**
+   * The magnitude of this vector.
+   */
+  public get magnitude(): number{
+    return Math.sqrt(this.sqrMagnitude);
+  }
 
-/**
- * Computes the difference between two vectors.
- * @param v1 The first vector.
- * @param v2 The second vector.
- * @returns The difference between `v1` and `v2`, i.e. a vector from the endpoint of `v2` to the endpoint of `v1`.
- */
-export function diff(v1: Vec2, v2: Vec2): Vec2{
-  return { x: v1.x - v2.x, y: v1.y - v2.y };
-}
+  /**
+   * The angle of this vector to the X-axis.
+   */
+  public get angle(): number{
+    return Math.atan2(this.#y, this.#x);
+  }
 
-/**
- * Scales a vector by a scalar value.
- * @param v The vector.
- * @param k The scaling factor.
- * @returns The vector `v` scaled by `k`.
- */
-export function scl(v: Vec2, k: number): Vec2{
-  return { x: k * v.x, y: k * v.y };
-}
+  /**
+   * Adds two vectors.
+   * @param other The other vector.
+   * @returns The sum of this vector and `other`.
+   */
+  public add(other: Vec2Like): Vec2{
+    return new Vec2(this.#x + other.x, this.#y + other.y);
+  }
 
-/**
- * Computes the dot product of two vectors.
- * @param v1 The first vector.
- * @param v2 The second vector.
- * @returns The dot product of `v1` and `v2`.
- */
-export function dot(v1: Vec2, v2: Vec2): number{
-  return v1.x * v2.x + v1.y * v2.y;
-}
+  /**
+   * Subtracts a vector from this vector.
+   * @param other The other vector.
+   * @returns This vector subtracted by `other`.
+   */
+  public sub(other: Vec2Like): Vec2{
+    return new Vec2(this.#x - other.x, this.#y - other.y);
+  }
 
-/**
- * Computes the 2D cross product of two vectors.
- * @param v1 The first vector.
- * @param v2 The second vector.
- * @returns The cross product of `v1` and `v2`.
- */
-export function cross(v1: Vec2, v2: Vec2): number{
-  return v1.x * v2.y - v2.x * v1.y;
+  /**
+   * Scales a vector by a constant factor.
+   * @param factor The scaling factor.
+   * @returns This vector multiplied by `factor`.
+   */
+  public scl(factor: number): Vec2{
+    return new Vec2(this.#x * factor, this.#y * factor);
+  }
+
+  /**
+   * Computes the signed angle between two vectors.
+   * @param other The other vector.
+   * @returns The angle from this vector to `other`.
+   */
+  public angleTo(other: Vec2 | Vec2Like): number{
+    const otherV = other instanceof Vec2 ? other : new Vec2(other.x, other.y);
+    let theta = otherV.angle - this.angle;
+
+    // Normalize the angle difference to the range [-PI, PI]
+    if(theta > Math.PI){
+      theta -= 2 * Math.PI;
+    }
+    if(theta < -Math.PI){
+      theta += 2 * Math.PI;
+    }
+
+    return theta;
+  }
+
+  /**
+   * Computes the dot product of two vectors.
+   * @param other The other vector.
+   * @returns The dot product of this vector and `other`.
+   */
+  public dot(other: Vec2Like): number{
+    return this.#x * other.x + this.#y * other.y;
+  }
+
+  /**
+   * Computes the 2D cross product of two vectors.
+   * @param other The other vector.
+   * @returns The cross product of this vector and `other`.
+   */
+  public cross(other: Vec2Like): number{
+    return this.#x * other.y - this.#y * other.x;
+  }
 }

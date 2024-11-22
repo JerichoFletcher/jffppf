@@ -1,5 +1,6 @@
-import { Vec2 } from "@/math";
+import { Vec2 } from "@/math/vector2";
 import Room from "./room";
+import RoomPoint from "./room-point";
 
 /**
  * An abstraction of links between different rooms. May represent doors or stairs.
@@ -28,6 +29,16 @@ export default abstract class Link{
    * The cost of this link for pathfinding purposes.
    */
   public abstract get cost(): number;
+
+  /**
+   * A list of points that serves as entrance to the link.
+   */
+  public abstract get entrances(): RoomPoint[];
+
+  /**
+   * A list of points that serves as exit from the link.
+   */
+  public abstract get exits(): RoomPoint[];
 
   /**
    * Gets the path this link connects from one room to another.

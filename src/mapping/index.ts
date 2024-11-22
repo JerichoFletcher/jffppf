@@ -4,3 +4,4 @@ export * from "./polygon-room";
 export * from "./room-point";
 export * from "./link";
 export * from "./door-link";
+export * from "./room-map";

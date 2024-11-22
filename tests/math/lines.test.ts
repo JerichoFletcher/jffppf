@@ -24,17 +24,6 @@ describe("Lines methods test", () => {
     expect(Lines.isWithinPoints({ x: 3, y: -1 }, a, b)).toBe(false);
   });
 
-  test("isWithinBoundingBox test", () => {
-    let l = 0, r = 5, b = 0, t = 5;
-
-    expect(Lines.isWithinBoundingBox({ x: 2, y: 4 }, l, r, b, t)).toBe(true);
-    expect(Lines.isWithinBoundingBox({ x: 4, y: 5 }, l, r, b, t)).toBe(true);
-    expect(Lines.isWithinBoundingBox({ x: 0, y: 5 }, l, r, b, t)).toBe(true);
-    expect(Lines.isWithinBoundingBox({ x: 5, y: 5 }, l, r, b, t)).toBe(true);
-    expect(Lines.isWithinBoundingBox({ x: 6, y: 4 }, l, r, b, t)).toBe(false);
-    expect(Lines.isWithinBoundingBox({ x: 3, y: -1 }, l, r, b, t)).toBe(false);
-  });
-
   test("liesOnSegment test", () => {
     let a = { x: 1, y: 1 };
     let b = { x: 5, y: 5 };

@@ -1,12 +1,13 @@
-import { Vector2, Vec2, Lines } from "@/math";
+import { Vec2, Lines, Vec2Like } from "@/math";
 import Room from "./room";
+import Rect from "@/math/rect";
 
 /**
  * Represents a polygonal room.
  */
 export default class PolygonRoom extends Room{
   #vertices: Vec2[];
-  #centroid: Vec2;
+  #boundary: Rect;
   #isConvex: boolean;
 
   /**
@@ -14,7 +15,7 @@ export default class PolygonRoom extends Room{
    * @param vertices The vertices (i.e. corners) of the room.
    * @param id The identifier of the room.
    */
-  public constructor(vertices: Vec2[], id?: string){
+  public constructor(vertices: Vec2Like[], id?: string){
     // Check first if there are enough vertices for a valid polygon
     if(vertices.length < 3){
       throw new Error("Polygonal room shape is invalid (not enough vertices)");
@@ -22,38 +23,41 @@ export default class PolygonRoom extends Room{
 
     super(id);
     
-    this.#vertices = [...vertices];
-    this.#centroid = { x: 0, y: 0 };
+    this.#vertices = [...vertices.map(v => Vec2.fromVec2Like(v))];
     this.#isConvex = true;
 
-    // Determine convexity and winding order
+    // Determine convexity and winding order, as well as boundary limits
     let orientationSign = 0, convexityCheck = true;
     let gaussArea = 0;
+    let left = Infinity, right = -Infinity, bottom = Infinity, top = -Infinity;
 
-    for(let i = 0; i < vertices.length; i++){
+    for(let i = 0; i < this.#vertices.length; i++){
       // Consider the next two edges of the polygon
-      const p1 = vertices[i];
-      const p2 = vertices[(i + 1) % vertices.length];
-      const p3 = vertices[(i + 2) % vertices.length];
+      const p1 = this.#vertices[i];
+      const p2 = this.#vertices[(i + 1) % this.#vertices.length];
+      const p3 = this.#vertices[(i + 2) % this.#vertices.length];
       
-      // Sum up the vertex positions for centroid precalculation
-      this.#centroid = Vector2.sum(this.#centroid, p1);
+      // Update boundary limits
+      left = Math.min(left, p1.x);
+      right = Math.max(right, p1.x);
+      bottom = Math.min(bottom, p1.y);
+      top = Math.max(top, p1.y);
 
       // Check if the segment intersects another segment of the polygon
-      for(let j = i + 2; j < vertices.length; j++){
+      for(let j = i + 2; j < this.#vertices.length; j++){
         // Skip pairing the first and last edge since they neighbor each other
-        if(i === 0 && j === vertices.length - 1)continue;
+        if(i === 0 && j === this.#vertices.length - 1)continue;
 
         // The polygon is invalid if it self intersects
-        const q1 = vertices[j];
-        const q2 = vertices[(j + 1) % vertices.length];
+        const q1 = this.#vertices[j];
+        const q2 = this.#vertices[(j + 1) % this.#vertices.length];
         if(Lines.segmentsIntersect(p1, p2, q1, q2)){
           throw new Error("Polygonal room shape is invalid (self-intersection present)");
         }
       }
 
       // Compute the signed area of the segment
-      const segmentGaussArea = Vector2.cross(p1, p2);
+      const segmentGaussArea = p1.cross(p2);
       gaussArea += segmentGaussArea;
 
       // Perform a convexity check if the convexity has not been determined yet
@@ -90,12 +94,16 @@ export default class PolygonRoom extends Room{
       this.#vertices.reverse();
     }
 
-    // Precompute the polygon centroid
-    this.#centroid = Vector2.scl(this.#centroid, 1 / this.#vertices.length);
+    // Set the polygon bounding box
+    this.#boundary = new Rect({ x: left, y: bottom }, { x: right, y: top });
   }
   
   public get centroid(): Vec2{
-    return this.#centroid;
+    return this.#boundary.center;
+  }
+
+  public get boundary(): Rect{
+    return this.#boundary;
   }
   
   /**
@@ -106,7 +114,7 @@ export default class PolygonRoom extends Room{
   public getVertex(index: number): Vec2{
     // To prevent modification, return a copy of the point instead
     const temp = this.#vertices[index];
-    return { x: temp.x, y: temp.y };
+    return new Vec2(temp.x, temp.y);
   }
   
   /**
@@ -123,7 +131,7 @@ export default class PolygonRoom extends Room{
     return this.#isConvex;
   }
 
-  public isPointInside(point: Vec2): boolean{
+  public isPointInside(point: Vec2Like): boolean{
     if(this.#isConvex){
       // If the room polygon is convex, use half-plane checks
       for(let i = 0; i < this.#vertices.length; i++){
@@ -154,11 +162,11 @@ export default class PolygonRoom extends Room{
         // Create two vectors:
         // v1 goes from the point to p1
         // v2 goes from the point to p2
-        const v1 = Vector2.diff(p1, point);
-        const v2 = Vector2.diff(p2, point);
+        const v1 = p1.sub(point);
+        const v2 = p2.sub(point);
   
         // Add the angle between v1 and v2 to the cumulative winding angle
-        const theta = Vector2.angleBetween(v1, v2);
+        const theta = v1.angleTo(v2);
         windingAngle += theta;
       }
       

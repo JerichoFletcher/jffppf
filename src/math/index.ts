@@ -1,3 +1,4 @@
-export { Vec2 } from "./vector2";
-export * as Vector2 from "./vector2";
+export * from "./vector2";
+export * from "./rect";
 export * as Lines from "./lines";
+export * as Distance from "./distance";

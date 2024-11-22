@@ -45,7 +45,9 @@ describe("PolygonRoom class test", () => {
     let room = new PolygonRoom(vert);
 
     for(let i = 0; i < vert.length; i++){
-      expect(room.getVertex(i)).toStrictEqual(vert[i]);
+      const v = room.getVertex(i);
+      expect(v.x).toBeCloseTo(vert[i].x);
+      expect(v.y).toBeCloseTo(vert[i].y);
     }
   });
 
@@ -59,7 +61,9 @@ describe("PolygonRoom class test", () => {
     let room = new PolygonRoom(vert);
 
     for(let i = 0; i < vert.length; i++){
-      expect(room.getVertex(i)).toStrictEqual(vert[vert.length - i - 1]);
+      const v = room.getVertex(i);
+      expect(v.x).toBeCloseTo(vert[vert.length - i - 1].x);
+      expect(v.y).toBeCloseTo(vert[vert.length - i - 1].y);
     }
   });
 
@@ -103,7 +107,7 @@ describe("PolygonRoom class test", () => {
     ]);
     let o = room.centroid;
 
-    expect(o.x).toBeCloseTo(1.6);
+    expect(o.x).toBeCloseTo(2);
     expect(o.y).toBeCloseTo(2);
   });
 });
