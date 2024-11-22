@@ -1,4 +1,4 @@
-import { Vec2, Vector2 } from "@/math";
+import { Vec2 } from "@/math";
 import Link from "./link";
 import Room from "./room";
 import RoomPoint from "./room-point";
@@ -25,22 +25,30 @@ export default class DoorLink extends Link{
     
     super(id);
 
-    this.#point1 = { point: { ...p1.point }, room: p1.room };
-    this.#point2 = { point: { ...p2.point }, room: p2.room };
-    this.#linkLength = Vector2.magnitude(Vector2.diff(this.#point1.point, this.#point2.point));
+    this.#point1 = { ...p1 };
+    this.#point2 = { ...p2 };
+    this.#linkLength = Vec2.fromVec2Like(this.#point1.point).sub(this.#point2.point).magnitude;
   }
 
   public get cost(): number{
     return this.#linkLength;
   }
 
+  public get entrances(): RoomPoint[]{
+    return [this.#point1, this.#point2];
+  }
+
+  public get exits(): RoomPoint[]{
+    return [this.#point1, this.#point2];
+  }
+
   public getPath(src: Room, dest: Room): Vec2[] | null{
     // Door links are two-way, so check if the IDs of the rooms match in either direction of the link
     if(src.id === this.#point1.room.id && dest.id === this.#point2.room.id){
-      return [this.#point1.point, this.#point2.point];
+      return [Vec2.fromVec2Like(this.#point1.point), Vec2.fromVec2Like(this.#point2.point)];
     }
     if(src.id === this.#point2.room.id && dest.id === this.#point1.room.id){
-      return [this.#point2.point, this.#point1.point];
+      return [Vec2.fromVec2Like(this.#point2.point), Vec2.fromVec2Like(this.#point1.point)];
     }
 
     // Otherwise, this link doesn't provide a path between the given rooms

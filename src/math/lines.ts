@@ -1,4 +1,5 @@
-import { cross, diff, Vec2 } from "./vector2";
+import Rect from "./rect";
+import { Vec2, Vec2Like } from "./vector2";
 
 /**
  * Compute the orientation of three points in a 2D plane.
@@ -9,8 +10,11 @@ import { cross, diff, Vec2 } from "./vector2";
  * Positive values denote counterclockwise orientations. Negative values denote clockwise orientations.
  * A value of zero means the three points are collinear (lying on a common straight line).
  */
-export function orientation(a: Vec2, b: Vec2, c: Vec2): number{
-  return cross(diff(b, a), diff(c, b));
+export function orientation(a: Vec2Like, b: Vec2Like, c: Vec2Like): number{
+  const vA = Vec2.fromVec2Like(a);
+  const vB = Vec2.fromVec2Like(b);
+  const vC = Vec2.fromVec2Like(c);
+  return vB.sub(vA).cross(vC.sub(vB));
 }
 
 /**
@@ -20,23 +24,8 @@ export function orientation(a: Vec2, b: Vec2, c: Vec2): number{
  * @param b The second corner of the bounding box.
  * @returns Whether `P` is within the bounding box `AB`.
  */
-export function isWithinPoints(p: Vec2, a: Vec2, b: Vec2): boolean{
-  return Math.min(a.x, b.x) <= p.x && p.x <= Math.max(a.x, b.x)
-    && Math.min(a.y, b.y) <= p.y && p.y <= Math.max(a.y, b.y);
-}
-
-/**
- * Checks if a point lies within a bounding box.
- * @param p The point to check.
- * @param left The left boundary of the area.
- * @param right The right boundary of the area.
- * @param bottom The bottom boundary of the area.
- * @param top The top boundary of the area.
- * @returns Whether `P` is within the given bounds.
- */
-export function isWithinBoundingBox(p: Vec2, left: number, right: number, bottom: number, top: number): boolean{
-  return left <= p.x && p.x <= right
-    && bottom <= p.y && p.y <= top;
+export function isWithinPoints(p: Vec2Like, a: Vec2Like, b: Vec2Like): boolean{
+  return new Rect(a, b).isWithin(p);
 }
 
 /**
@@ -46,7 +35,7 @@ export function isWithinBoundingBox(p: Vec2, left: number, right: number, bottom
  * @param b The second end of the segment.
  * @returns Whether `P` lies on the line segment `AB`.
  */
-export function liesOnSegment(p: Vec2, a: Vec2, b: Vec2): boolean{
+export function liesOnSegment(p: Vec2Like, a: Vec2Like, b: Vec2Like): boolean{
   // This check is performed by first checking that P is collinear with A and B,
   // then doing a bounding box check to make sure P is within A and B
   return orientation(p, a, b) === 0 && isWithinPoints(p, a, b);
@@ -60,7 +49,7 @@ export function liesOnSegment(p: Vec2, a: Vec2, b: Vec2): boolean{
  * @param v The second end of the second segment.
  * @returns Whether the line segments `ab` and `uv` intersect.
  */
-export function segmentsIntersect(a: Vec2, b: Vec2, u: Vec2, v: Vec2): boolean{
+export function segmentsIntersect(a: Vec2Like, b: Vec2Like, u: Vec2Like, v: Vec2Like): boolean{
   // AB and UV intersect if the orientations of ABU and ABV differ, and the orientations of UVA and UVB also differ
   const oABU = orientation(a, b, u);
   const oABV = orientation(a, b, v);

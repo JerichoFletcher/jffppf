@@ -1,4 +1,4 @@
-import { Vec2 } from "@/math";
+import { Vec2Like } from "@/math";
 import Room from "./room";
 
 /**
@@ -6,7 +6,7 @@ import Room from "./room";
  */
 export default interface RoomPoint{
   /** The encapsulated point information. */
-  point: Vec2;
+  point: Vec2Like;
   /** What room to be associated with this point. */
   room: Room;
 }
