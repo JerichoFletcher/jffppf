@@ -33,6 +33,11 @@ export default abstract class Room{
    * The rectangular boundary of the room.
    */
   public abstract get boundary(): Rect;
+
+  /**
+   * Whether the room shape is convex.
+   */
+  public abstract get isConvex(): boolean;
  
   /**
   * Check if a point is inside of the room.

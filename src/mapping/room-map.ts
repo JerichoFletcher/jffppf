@@ -1,4 +1,4 @@
-import { Vec2 } from "@/math";
+import { Vec2, Vec2Like } from "@/math";
 import Link from "./link";
 import Room from "./room";
 import Rect from "@/math/rect";
@@ -112,7 +112,7 @@ export default class RoomMap{
    * @param point The point to map.
    * @returns The room that the position at `point` is associated with, or `null` if the point is not inside any room.
    */
-  public pointToRoom(point: Vec2): Room | null{
+  public pointToRoom(point: Vec2Like): Room | null{
     // Do not bother searching if the point lies outside the bounding box of the map
     if(!this.#boundary.isWithin(point)){
       return null;

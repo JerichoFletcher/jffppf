@@ -32,6 +32,10 @@ export default class RectRoom extends Room{
     return this.#bounds;
   }
 
+  public get isConvex(): boolean{
+    return true;
+  }
+
   public isPointInside(point: Vec2Like): boolean{
     return this.#bounds.isWithin(point);
   }

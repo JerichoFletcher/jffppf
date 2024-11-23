@@ -106,6 +106,10 @@ export default class PolygonRoom extends Room{
     return this.#boundary;
   }
   
+  public get isConvex(): boolean{
+    return this.#isConvex;
+  }
+
   /**
    * Gets the coordinate of a vertex of the room representation polygon.
    * @param index The index that points to the vertex.
@@ -122,13 +126,6 @@ export default class PolygonRoom extends Room{
   */
   public get vertexCount(): number{
     return this.#vertices.length;
-  }
-  
-  /**
-   * Whether the room shape is convex.
-  */
-  public get isConvex(): boolean{
-    return this.#isConvex;
   }
 
   public isPointInside(point: Vec2Like): boolean{
