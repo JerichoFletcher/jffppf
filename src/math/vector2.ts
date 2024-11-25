@@ -27,6 +27,11 @@ export class Vec2{
     return v instanceof Vec2 ? v : new Vec2(v.x, v.y);
   }
 
+  /** Shorthand for the zero vector, [0, 0]. */
+  public static get zero(): Vec2{
+    return new Vec2(0, 0);
+  }
+
   /** The x-component of the vector. */
   public get x(): number{
     return this.#x;
@@ -121,5 +126,14 @@ export class Vec2{
    */
   public cross(other: Vec2Like): number{
     return this.#x * other.y - this.#y * other.x;
+  }
+
+  /**
+   * Determines if two vectors are equal.
+   * @param other The other vector.
+   * @returns `true` if this vector equals `other`, and `false` otherwise.
+   */
+  public equals(other: Vec2Like): boolean{
+    return this.#x == other.x && this.#y == other.y;
   }
 }

@@ -1,25 +1,55 @@
 import { DistanceFunction } from "@/math/distance";
 import Pathfinder from "./pathfinder";
 import RoomMap from "@/mapping/room-map";
-import { Vec2Like, Vec2 } from "@/math";
+import { Vec2Like, Vec2, Distance } from "@/math";
 import Room from "@/mapping/room";
+import PriorityQueue from "js-priority-queue";
+
+/** How to determine the neighbors of each cell in room grids. */
+export type NeighborStrategy = "4-way" | "8-way";
+/** How to compute the distance between two points. */
+export type DistanceMode = "manhattan" | "euclidean" | DistanceFunction;
+
+/**
+ * Parameters and configurations for pathfinding using the A* algorithm.
+ */
+export interface AstarPathfindingConfig{
+  /** The size (width and height) of each cell in room grids. Smaller values lead to finer-grained in-room pathing, at the cost of heavier workload. */
+  roomGridCellSize?: number;
+  /** How to determine the neighbors of each cell in room grids. */
+  neighborStrategy?: NeighborStrategy;
+  /** How to compute distances between points in the map. May accept a custom distance function. */
+  distanceMode?: DistanceMode;
+}
 
 /**
  * Encapsulates an instance of pathfinder that uses the A* algorithm.
  */
-export default class AstarPathfinder extends Pathfinder{
-  #distFunc: DistanceFunction;
+export class AstarPathfinder extends Pathfinder{
+  #openSet: PriorityQueue<AstarNode>;
+  #checkSet: Set<AstarNode>;
+  #closedSet: Set<AstarNode>;
   
-  /**
-   * Constructs an A* pathfinder.
-   * @param distFunc The distance function to be used in path calculations.
-   */
-  constructor(distFunc: DistanceFunction){
+  constructor(){
     super();
-    this.#distFunc = distFunc;
+
+    // The open-set is a priority queue that sorts nodes based on the f-cost, which is the estimation of the optimal cost of a path
+    // that passes through the node. We sort them such that nodes with the smallest f-cost gets processed first
+    this.#openSet = new PriorityQueue<AstarNode>({
+      comparator: (a, b) => {
+        let comp = a.fCost - b.fCost;
+        if(comp === 0){
+          comp = a.hCost - b.hCost;
+        }
+        return comp;
+      }
+    });
+
+    this.#checkSet = new Set<AstarNode>();
+    this.#closedSet = new Set<AstarNode>();
   }
 
-  public findPathToRoom(map: RoomMap, src: Vec2Like, dest: Room): Vec2[]{
+  public findPathToRoom(map: RoomMap, src: Vec2Like, dest: Room): Vec2Like[]{
     if(!map.rooms.has(dest.id)){
       throw new Error("Destination room is not part of the map");
     }
@@ -40,7 +70,7 @@ export default class AstarPathfinder extends Pathfinder{
     return [];
   }
 
-  public findPathToPoint(map: RoomMap, src: Vec2Like, dest: Vec2Like): Vec2[]{
+  public findPathToPoint(map: RoomMap, src: Vec2Like, dest: Vec2Like): Vec2Like[]{
     const roomStart = map.pointToRoom(src);
     const roomEnd = map.pointToRoom(dest);
 
@@ -62,7 +92,7 @@ export default class AstarPathfinder extends Pathfinder{
     return [];
   }
 
-  public findPathInRoom(room: Room, src: Vec2Like, dest: Vec2Like): Vec2[]{
+  public findPathInRoom(room: Room, src: Vec2Like, dest: Vec2Like, conf?: AstarPathfindingConfig): Vec2Like[]{
     if(!room.isPointInside(src)){
       throw new Error("Origin point is outside of the room");
     }
@@ -70,15 +100,360 @@ export default class AstarPathfinder extends Pathfinder{
       throw new Error("Destination point is outside of the room");
     }
 
-    // The path is trivial if the room is convex
-    if(room.isConvex){
-      /// TODO: Prefer 4- or 8-way paths instead of a pure straight line
-      return [Vec2.fromVec2Like(src), Vec2.fromVec2Like(dest)];
+    // Determine what distance function to use, defaults to Euclidean
+    let distFunc = conf?.distanceMode ?? Distance.euclidean;
+    if(typeof distFunc === "string"){
+      switch(distFunc){
+        case "euclidean":
+          distFunc = Distance.euclidean;
+          break;
+        case "manhattan":
+          distFunc = Distance.manhattan;
+          break;
+      }
     }
 
-    /// TODO: Quantize the room space into grid cells and compute a traversal path using A*
+    // Determine the grid cell size to use, defaults to 1
+    const gridCellSize = conf?.roomGridCellSize ?? 1;
+    
+    // Get the search grid for the room
+    const roomGrid = AstarGrid.fromRoom(room, gridCellSize);
+    
+    const startNode = roomGrid.worldToNode(src);
+    const endNode = roomGrid.worldToNode(dest);
+    
+    // Validation
+    if(startNode === null){
+      const startPos = roomGrid.worldToCell(src);
+      throw new Error(`A* path search failed (start position [${startPos.x}, ${startPos.y}] is outside of the room)`);
+    }
+    if(endNode === null){
+      const endPos = roomGrid.worldToCell(dest);
+      throw new Error(`A* path search failed (end position [${endPos.x}, ${endPos.y}] is outside of the room)`);
+    }
+    
+    
+    // Initialization
+    //// const log: string[] = [];
+    let success = false;
+    
+    this.#openSet.clear();
+    this.#checkSet.clear();
+    this.#closedSet.clear();
+    
+    this.#openSet.queue(startNode);
+    
+    // Keep looping until no more nodes are available
+    while(this.#openSet.length > 0){
+      const current = this.#openSet.dequeue();
+      this.#closedSet.add(current);
+
+      //// log.push(`Current node is [${current.pos.x}, ${current.pos.y}]`);
+
+      // Bail if we have reached the end node and begin path retracing
+      if(current === endNode){
+        success = true;
+        break;
+      }
+
+      // Determine neighbors of the current node using the neighbor strategy, defaults to 8-way
+      const neighbors = roomGrid.neighborsOf(current, conf?.neighborStrategy ?? "8-way");
+      
+      for(const neighbor of neighbors){
+        if(this.#closedSet.has(neighbor)){
+          continue;
+        }
+
+        // Calculate the g-cost and overwrite if the current value is better than the old one
+        const currGCost = current.gCost + distFunc(current.pos, neighbor.pos);
+        if(!this.#checkSet.has(neighbor) || currGCost < neighbor.gCost){
+          neighbor.gCost = currGCost;
+          neighbor.hCost = distFunc(neighbor.pos, endNode.pos);
+          neighbor.parent = current;
+          
+          //// log.push(`Evaluated neighbor [${neighbor.pos.x}, ${neighbor.pos.y}], score: G:${neighbor.gCost} + H:${neighbor.hCost} = ${neighbor.fCost}`);
+
+          // Consider this node for evaluation
+          if(!this.#checkSet.has(neighbor)){
+            this.#openSet.queue(neighbor);
+            this.#checkSet.add(neighbor);
+          }
+        }
+      }
+    }
+
+    // Retrace path from the resulting search tree
+    if(success){
+      const path: AstarNode[] = [];
+      let current: AstarNode | null = endNode;
+
+      while(current !== null){
+        //// log.push(`Retracing from [${current.pos.x}, ${current.pos.y}]`);
+        path.push(current);
+        current = current.parent;
+      }
+
+      //// console.log(log.join('\n'));
+      return this.simplifyPath(path.reverse(), roomGrid);
+    }
 
     // No path is found
+    //// console.log(log.join('\n'));
     return [];
+  }
+
+  /**
+   * Simplifies a result path to only include the start, end, and turning points.
+   * @param path The raw path.
+   * @param roomGrid The search grid of the room.
+   * @returns The simplified path.
+   */
+  private simplifyPath(path: AstarNode[], roomGrid: AstarGrid): Vec2Like[]{
+    if(path.length === 0){
+      return [];
+    }
+    if(path.length === 1){
+      return [path[0].pos];
+    }
+
+    const pathSimple: Vec2Like[] = [];
+    let currDir = Vec2.zero;
+
+    // If the direction between each pair differs from the previous pair, add its first node (the turning point) to the simplified path
+    for(let i = 1; i < path.length; i++){
+      const newDir = Vec2.fromVec2Like(path[i - 1].cell).sub(path[i].cell);
+      
+      if(!currDir.equals(newDir)){
+        pathSimple.push(path[i - 1].pos);
+      }
+      currDir = newDir;
+    }
+
+    pathSimple.push(path[path.length - 1].pos);
+    return pathSimple.map(v => { return { x: v.x, y: v.y }; });
+  }
+}
+
+/**
+ * Represents a node in an A* search tree.
+ */
+class AstarNode{
+  #parent?: AstarNode;
+  #pos: Vec2Like;
+  #cell: Vec2Like;
+  #gCost: number;
+  #hCost: number;
+
+  constructor(pos: Vec2Like, cell: Vec2Like){
+    this.#pos = pos;
+    this.#cell = cell;
+    this.#gCost = 0;
+    this.#hCost = 0;
+  }
+
+  /** The precedence of this node. Primarily used for path retracing. */
+  get parent(): AstarNode | null{
+    return this.#parent || null;
+  }
+
+  set parent(val: AstarNode){
+    this.#parent = val;
+  }
+
+  /** The world space position associated with this node. */
+  get pos(): Vec2Like{
+    return this.#pos;
+  }
+
+  /** The grid space position associated with this node. */
+  get cell(): Vec2Like{
+    return this.#cell;
+  }
+
+  /** The distance from this node to the root (start) node. */
+  get gCost(): number{
+    return this.#gCost;
+  }
+
+  set gCost(val: number){
+    this.#gCost = val;
+  }
+
+  /** The estimated (heuristic) distance from this node to the end node. */
+  get hCost(): number{
+    return this.#hCost;
+  }
+
+  set hCost(val: number){
+    this.#hCost = val;
+  }
+
+  /** The estimated cost of the optimal path going through this node. */
+  get fCost(): number{
+    return this.#gCost + this.#hCost;
+  }
+}
+
+/**
+ * Represents a grid of search nodes.
+ */
+class AstarGrid{
+  #nodes: (AstarNode | null)[][];
+  #gridDim: Vec2;
+  #cellSize: number;
+  #origin: Vec2;
+
+  /**
+   * Creates an A* grid.
+   * @param gridDim The size of the grid, in cell count.
+   * @param origin The origin point of the grid.
+   * @param cellSize The world size of each cell.
+   */
+  constructor(gridDim: Vec2Like, origin: Vec2Like, cellSize: number){
+    this.#gridDim = Vec2.fromVec2Like(gridDim);
+    this.#origin = Vec2.fromVec2Like(origin);
+    this.#cellSize = cellSize;
+
+    this.#nodes = [];
+    for(let x = 0; x < gridDim.x; x++){
+      this.#nodes.push([]);
+      for(let y = 0; y < gridDim.y; y++){
+        this.#nodes[x].push(null);
+      }
+    }
+  }
+
+  /**
+   * Creates an A* grid from a room.
+   * @param room The room.
+   * @param gridCellSize The desired world size of each cell in the grid.
+   * @returns A grid that represents `room`.
+   */
+  static fromRoom(room: Room, gridCellSize: number): AstarGrid{
+    const origin: Vec2Like = { x: room.boundary.left, y: room.boundary.bottom };
+    const gridDim: Vec2Like = {
+      x: Math.round(room.boundary.size.x / gridCellSize),
+      y: Math.round(room.boundary.size.y / gridCellSize),
+    };
+
+    const grid = new AstarGrid(gridDim, origin, gridCellSize);
+
+    // Add nodes at cells whose center point lies inside the room
+    for(let x = 0; x < gridDim.x; x++){
+      for(let y = 0; y < gridDim.y; y++){
+        const pos = grid.cellToWorld({ x, y });
+        if(room.isPointInside(pos)){
+          grid.#nodes[x][y] = new AstarNode(pos, { x, y });
+        }
+      }
+    }
+
+    return grid;
+  }
+  
+  /**
+   * Gets the node at a world position.
+   * @param pos The world position.
+   * @returns The corresponding node at `pos`.
+   */
+  worldToNode(pos: Vec2Like): AstarNode | null{
+    const cell = this.worldToCell(pos);
+    return this.cellToNode(cell);
+  }
+
+  /**
+   * Gets the node at a cell position.
+   * @param cell The grid space position.
+   * @returns The corresponding node at `cell`.
+   */
+  cellToNode(cell: Vec2Like): AstarNode | null{
+    if(
+      0 <= cell.x && cell.x < this.#gridDim.x
+      && 0 <= cell.y && cell.y < this.#gridDim.y
+    ){
+      return this.#nodes[cell.x][cell.y];
+    }
+
+    return null;
+  }
+
+  /**
+   * Converts a world space position to the corresponding grid space position.
+   * @param pos The position in world space.
+   * @returns The corresponding grid space position of `pos`.
+   */
+  worldToCell(pos: Vec2Like): Vec2Like{
+    const cell = Vec2.fromVec2Like(pos)
+      .sub(this.#origin)
+      .scl(1 / this.#cellSize);
+    return { x: Math.floor(cell.x), y: Math.floor(cell.y) };
+  }
+
+  /**
+   * Gets the world space position of a grid space position.
+   * @param cell The position in grid space.
+   * @returns The world space position of `cell`, which corresponds to the world space center point of the cell at the specified coordinate.
+   */
+  cellToWorld(cell: Vec2Like): Vec2Like{
+    return Vec2.fromVec2Like(cell)
+      .add({ x: 0.5, y: 0.5 })
+      .scl(this.#cellSize)
+      .add(this.#origin);
+  }
+
+  /**
+   * Finds the neighbors of a given node.
+   * @param node The reference node.
+   * @param neighborStrategy How to select cells as neighbors.
+   * @returns An array of nodes neighboring `node`.
+   */
+  neighborsOf(node: AstarNode, neighborStrategy: NeighborStrategy): AstarNode[]{
+    const cell = this.worldToCell(node.pos);
+    const neighbors: AstarNode[] = [];
+
+    let nextNeighbor: AstarNode | null;
+    switch(neighborStrategy){
+      case "8-way":
+        for(let dx = -1; dx <= 1; dx += 2){
+          for(let dy = -1; dy <= 1; dy += 2){
+            nextNeighbor = this.cellToNode({ x: cell.x + dx, y: cell.y + dy });
+            if(nextNeighbor !== null){
+              neighbors.push(nextNeighbor);
+            }
+          }
+        }
+
+      case "4-way":
+        for(let dx = -1; dx <= 1; dx += 2){
+          nextNeighbor = this.cellToNode({ x: cell.x + dx, y: cell.y });
+          if(nextNeighbor !== null){
+            neighbors.push(nextNeighbor);
+          }
+        }
+        for(let dy = -1; dy <= 1; dy += 2){
+          nextNeighbor = this.cellToNode({ x: cell.x, y: cell.y + dy });
+          if(nextNeighbor !== null){
+            neighbors.push(nextNeighbor);
+          }
+        }
+        break;
+    }
+
+    return neighbors;
+  }
+
+  /** The size of the grid in cell count. */
+  get gridDim(): Vec2Like{
+    return this.#gridDim;
+  }
+  
+  /** The origin point of the grid. */
+  get origin(): Vec2Like{
+    return this.#origin;
+  }
+  
+  /** The world size of each cell in the grid. */
+  get cellSize(): number{
+    return this.#cellSize;
   }
 }
