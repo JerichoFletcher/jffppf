@@ -9,7 +9,8 @@ import Rect from "@/math/rect";
 export default class RoomMap{
   #rooms: Map<string, Room>;
   #links: Map<string, Link>;
-  #roomLinkMapping: Map<string, string[]>;
+  #roomLinkEntranceMapping: Map<string, string[]>;
+  #roomLinkExitMapping: Map<string, string[]>;
   #boundary: Rect;
 
   /**
@@ -20,7 +21,8 @@ export default class RoomMap{
   public constructor(rooms: Room[], links: Link[]){
     this.#rooms = new Map<string, Room>();
     this.#links = new Map<string, Link>();
-    this.#roomLinkMapping = new Map<string, string[]>();
+    this.#roomLinkEntranceMapping = new Map<string, string[]>();
+    this.#roomLinkExitMapping = new Map<string, string[]>();
 
     // Determine boundary limits
     let left = Infinity, right = -Infinity, bottom = Infinity, top = -Infinity;
@@ -32,7 +34,8 @@ export default class RoomMap{
       }
       
       this.#rooms.set(room.id, room);
-      this.#roomLinkMapping.set(room.id, []);
+      this.#roomLinkEntranceMapping.set(room.id, []);
+      this.#roomLinkExitMapping.set(room.id, []);
 
       // Update boundary limits
       left = Math.min(left, room.boundary.left);
@@ -56,7 +59,7 @@ export default class RoomMap{
           throw new Error(`Room map is invalid (link '${link.id}' has an entrance with unknown room ID '${entranceId}')`);
         }
         
-        this.#roomLinkMapping.get(entranceId)!.push(link.id);
+        this.#roomLinkEntranceMapping.get(entranceId)!.push(link.id);
       }
       
       // Validate link exits
@@ -64,6 +67,8 @@ export default class RoomMap{
         if(!this.#rooms.has(exitId)){
           throw new Error(`Room map is invalid (link '${link.id}' has an exit with unknown room ID '${exitId}')`);
         }
+
+        this.#roomLinkExitMapping.get(exitId)!.push(link.id);
       }
 
       this.#links.set(link.id, link);
@@ -87,14 +92,44 @@ export default class RoomMap{
   /**
    * The mapping between each room and the links enterable from the room.
    */
-  public get roomLinkMapping(): Map<string, string[]>{
-    return new Map(this.#roomLinkMapping);
+  public get roomLinkEntranceMapping(): Map<string, string[]>{
+    return new Map(this.#roomLinkEntranceMapping);
+  }
+  
+  /**
+   * Retrieves all links that can be entered from a room.
+   * @param room The origin room.
+   * @returns A list containing all the links that can be traversed directly from `room`.
+   */
+  public linksFrom(room: Room): Link[]{
+    if(!this.#rooms.has(room.id)){
+      throw new Error(`Room '${room.id}' is not part of this map`);
+    }
+    
+    // Look up links connected from this room
+    return this.#roomLinkEntranceMapping.get(room.id)!
+      .map(linkId => this.#links.get(linkId)!);
+  }
+
+  /**
+   * Retrieves all links that leads to a room.
+   * @param room The destination room.
+   * @returns A list containing all the links that exit to `room`.
+   */
+  public linksTo(room: Room): Link[]{
+    if(!this.#rooms.has(room.id)){
+      throw new Error(`Room '${room.id}' is not part of this map`);
+    }
+
+    // Look up links connected to this room
+    return this.#roomLinkExitMapping.get(room.id)!
+      .map(linkId => this.#links.get(linkId)!);
   }
 
   /**
    * Determines what rooms can be accessed directly from a room.
    * @param room The origin room.
-   * @returns A list containing all the rooms that can be traversed to directly from `room` via a link.
+   * @returns A list containing all the rooms that is connected via at least one link to `room`.
    */
   public neighborsOf(room: Room): Room[]{
     if(!this.#rooms.has(room.id)){
@@ -102,11 +137,10 @@ export default class RoomMap{
     }
 
     // Evaluate which rooms can be entered via direct link from this room
-    return this.#roomLinkMapping.get(room.id)!
-      .map(linkId => this.#links.get(linkId)!)
+    return this.linksFrom(room)
       .flatMap(link => link.exits.map(p => p.room));
   }
-
+  
   /**
    * Maps a point on 2D space to a corresponding room in the map.
    * @param point The point to map.

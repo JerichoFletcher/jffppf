@@ -7,7 +7,9 @@ describe("A* pathfinder test", () => {
     const pather = new AstarPathfinder();
 
     // Ideal path in this case is a straight diagonal from (0.5, 0.5) to (7.5, 7.5)
-    expect(pather.roomPointToPoint(room, { x: 0.5, y: 0.5 }, { x: 7.5, y: 7.5 })).toStrictEqual([
+    const result = pather.roomPointToPoint(room, { x: 0.5, y: 0.5 }, { x: 7.5, y: 7.5 });
+    expect(result.success).toBeTruthy()
+    expect(result.success && result.path).toStrictEqual([
       { x: 0.5, y: 0.5 },
       { x: 7.5, y: 7.5 },
     ]);
@@ -18,10 +20,12 @@ describe("A* pathfinder test", () => {
     const pather = new AstarPathfinder();
 
     // Ideal path in this case is an L-shaped path from (0.5, 0.5), to one corner (either (7.5, 0.5) or (0.5, 7.5)), then to (7.5, 7.5)
-    expect(pather.roomPointToPoint(room, { x: 0.5, y: 0.5 }, { x: 7.5, y: 7.5 }, {
+    const result = pather.roomPointToPoint(room, { x: 0.5, y: 0.5 }, { x: 7.5, y: 7.5 }, {
       distanceMode: "manhattan",
       neighborStrategy: "4-way",
-    })).toStrictEqual([
+    });
+    expect(result.success).toBeTruthy();
+    expect(result.success && result.path).toStrictEqual([
       { x: 0.5, y: 0.5 },
       { x: 7.5, y: 0.5 },
       { x: 7.5, y: 7.5 },
@@ -32,9 +36,11 @@ describe("A* pathfinder test", () => {
     const room = new RectRoom({ x: 5, y: 10 }, { x: 20, y: 20 });
     const pather = new AstarPathfinder();
 
-    expect(pather.roomPointToPoint(room, { x: 5.5, y: 19.5 }, { x: 19.5, y: 10.5 }, {
+    const result = pather.roomPointToPoint(room, { x: 5.5, y: 19.5 }, { x: 19.5, y: 10.5 }, {
       turnPenalty: 1,
-    })).toStrictEqual([
+    });
+    expect(result.success).toBeTruthy();
+    expect(result.success && result.path).toStrictEqual([
       { x: 5.5, y: 19.5 },
       { x: 14.5, y: 10.5 },
       { x: 19.5, y: 10.5 },
