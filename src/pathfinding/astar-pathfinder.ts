@@ -8,7 +8,7 @@ import PriorityQueue from "js-priority-queue";
 /** How to determine the neighbors of each cell in room grids. */
 export type NeighborStrategy = "4-way" | "8-way";
 /** How to compute the distance between two points. */
-export type DistanceMode = "manhattan" | "euclidean" | DistanceFunction;
+export type DistanceMode = "manhattan" | "octile" | "euclidean" | DistanceFunction;
 
 /**
  * Parameters and configurations for pathfinding using the A* algorithm.
@@ -20,6 +20,8 @@ export interface AstarPathfindingConfig{
   neighborStrategy?: NeighborStrategy;
   /** How to compute distances between points in the map. May accept a custom distance function. */
   distanceMode?: DistanceMode;
+  /** The penalty for each turning point in the path. Values greater than 0 favors paths with fewer turns. */
+  turnPenalty?: number;
 }
 
 /**
@@ -49,7 +51,7 @@ export class AstarPathfinder extends Pathfinder{
     this.#closedSet = new Set<AstarNode>();
   }
 
-  public findPathToRoom(map: RoomMap, src: Vec2Like, dest: Room): Vec2Like[]{
+  public mapPointToRoom(map: RoomMap, src: Vec2Like, dest: Room): Vec2Like[]{
     if(!map.rooms.has(dest.id)){
       throw new Error("Destination room is not part of the map");
     }
@@ -70,7 +72,7 @@ export class AstarPathfinder extends Pathfinder{
     return [];
   }
 
-  public findPathToPoint(map: RoomMap, src: Vec2Like, dest: Vec2Like): Vec2Like[]{
+  public mapPointToPoint(map: RoomMap, src: Vec2Like, dest: Vec2Like): Vec2Like[]{
     const roomStart = map.pointToRoom(src);
     const roomEnd = map.pointToRoom(dest);
 
@@ -83,7 +85,7 @@ export class AstarPathfinder extends Pathfinder{
 
     // Path search can be simplified if both points are located in the same room
     if(roomStart === roomEnd){
-      return this.findPathInRoom(roomStart, src, dest);
+      return this.roomPointToPoint(roomStart, src, dest);
     }
 
     /// TODO: Construct a traversal graph based on the provided map and compute a path using hierarchical A*
@@ -92,7 +94,7 @@ export class AstarPathfinder extends Pathfinder{
     return [];
   }
 
-  public findPathInRoom(room: Room, src: Vec2Like, dest: Vec2Like, conf?: AstarPathfindingConfig): Vec2Like[]{
+  public roomPointToPoint(room: Room, src: Vec2Like, dest: Vec2Like, conf?: AstarPathfindingConfig): Vec2Like[]{
     if(!room.isPointInside(src)){
       throw new Error("Origin point is outside of the room");
     }
@@ -100,8 +102,8 @@ export class AstarPathfinder extends Pathfinder{
       throw new Error("Destination point is outside of the room");
     }
 
-    // Determine what distance function to use, defaults to Euclidean
-    let distFunc = conf?.distanceMode ?? Distance.euclidean;
+    // Determine what distance function to use, defaults to octile
+    let distFunc = conf?.distanceMode ?? Distance.octile;
     if(typeof distFunc === "string"){
       switch(distFunc){
         case "euclidean":
@@ -109,6 +111,9 @@ export class AstarPathfinder extends Pathfinder{
           break;
         case "manhattan":
           distFunc = Distance.manhattan;
+          break;
+        case "octile":
+          distFunc = Distance.octile;
           break;
       }
     }
@@ -167,9 +172,19 @@ export class AstarPathfinder extends Pathfinder{
         // Calculate the g-cost and overwrite if the current value is better than the old one
         const currGCost = current.gCost + distFunc(current.pos, neighbor.pos);
         if(!this.#checkSet.has(neighbor) || currGCost < neighbor.gCost){
+          neighbor.parent = current;
           neighbor.gCost = currGCost;
           neighbor.hCost = distFunc(neighbor.pos, endNode.pos);
-          neighbor.parent = current;
+
+          // If turning point penalty is defined, add the penalty to the node's h-cost
+          if(conf?.turnPenalty && neighbor.parent.parent){
+            const oldDir = neighbor.parent.cell.sub(neighbor.parent.parent.cell);
+            const newDir = neighbor.cell.sub(neighbor.parent.cell);
+
+            if(!oldDir.equals(newDir)){
+              neighbor.hCost += conf.turnPenalty;
+            }
+          }
           
           //// log.push(`Evaluated neighbor [${neighbor.pos.x}, ${neighbor.pos.y}], score: G:${neighbor.gCost} + H:${neighbor.hCost} = ${neighbor.fCost}`);
 
@@ -194,7 +209,7 @@ export class AstarPathfinder extends Pathfinder{
       }
 
       //// console.log(log.join('\n'));
-      return this.simplifyPath(path.reverse(), roomGrid);
+      return this.simplifyPath(path.reverse());
     }
 
     // No path is found
@@ -208,7 +223,7 @@ export class AstarPathfinder extends Pathfinder{
    * @param roomGrid The search grid of the room.
    * @returns The simplified path.
    */
-  private simplifyPath(path: AstarNode[], roomGrid: AstarGrid): Vec2Like[]{
+  private simplifyPath(path: AstarNode[]): Vec2Like[]{
     if(path.length === 0){
       return [];
     }
@@ -239,14 +254,14 @@ export class AstarPathfinder extends Pathfinder{
  */
 class AstarNode{
   #parent?: AstarNode;
-  #pos: Vec2Like;
-  #cell: Vec2Like;
+  #pos: Vec2;
+  #cell: Vec2;
   #gCost: number;
   #hCost: number;
 
   constructor(pos: Vec2Like, cell: Vec2Like){
-    this.#pos = pos;
-    this.#cell = cell;
+    this.#pos = Vec2.fromVec2Like(pos);
+    this.#cell = Vec2.fromVec2Like(cell);
     this.#gCost = 0;
     this.#hCost = 0;
   }
@@ -261,12 +276,12 @@ class AstarNode{
   }
 
   /** The world space position associated with this node. */
-  get pos(): Vec2Like{
+  get pos(): Vec2{
     return this.#pos;
   }
 
   /** The grid space position associated with this node. */
-  get cell(): Vec2Like{
+  get cell(): Vec2{
     return this.#cell;
   }
 
