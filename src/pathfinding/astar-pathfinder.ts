@@ -145,7 +145,6 @@ export class AstarPathfinder extends Pathfinder{
     }
     
     // Initialization
-    //// const log: string[] = [];
     let nodesVisited = 0;
     let success = false;
     
@@ -161,8 +160,6 @@ export class AstarPathfinder extends Pathfinder{
       this.#closedSet.add(current);
 
       nodesVisited++;
-
-      //// log.push(`Current node is [${current.pos.x}, ${current.pos.y}]`);
 
       // Bail if we have reached the end node and begin path retracing
       if(current === endNode){
@@ -185,17 +182,16 @@ export class AstarPathfinder extends Pathfinder{
           neighbor.gCost = currGCost;
           neighbor.hCost = distFunc(neighbor.pos, endNode.pos);
 
-          // If turning point penalty is defined, add the penalty to the node's h-cost
-          if(neighbor.parent.parent){
+          // If turning point penalty is nonzero, add the penalty to the node's h-cost
+          const turnPenalty = conf?.turnPenalty ?? this.#conf.turnPenalty!;
+          if(turnPenalty !== 0 && neighbor.parent.parent){
             const oldDir = neighbor.parent.cell.sub(neighbor.parent.parent.cell);
             const newDir = neighbor.cell.sub(neighbor.parent.cell);
 
             if(!oldDir.equals(newDir)){
-              neighbor.hCost += conf?.turnPenalty ?? this.#conf.turnPenalty!;
+              neighbor.hCost += turnPenalty;
             }
           }
-          
-          //// log.push(`Evaluated neighbor [${neighbor.pos.x}, ${neighbor.pos.y}], score: G:${neighbor.gCost} + H:${neighbor.hCost} = ${neighbor.fCost}`);
 
           // Consider this node for evaluation
           if(!this.#checkSet.has(neighbor)){
@@ -212,17 +208,14 @@ export class AstarPathfinder extends Pathfinder{
       let current: AstarNode | null = endNode;
 
       while(current !== null){
-        //// log.push(`Retracing from [${current.pos.x}, ${current.pos.y}]`);
         path.push(current);
         current = current.parent;
       }
 
-      //// console.log(log.join('\n'));
       return { nodesVisited, success: true, path: this.simplifyPath(path.reverse()), cost: endNode.fCost };
     }
 
     // No path is found
-    //// console.log(log.join('\n'));
     return { nodesVisited, success: false };
   }
 
