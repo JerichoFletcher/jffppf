@@ -22,8 +22,12 @@ export interface PathfindingConfig{
   distanceMode?: DistanceMode;
   /** The penalty for each turning point in the path. Values greater than 0 favors paths with fewer turns. */
   turnPenalty?: number;
+  /** Whether crossing corners of obstacles is allowed. */
+  crossCorners?: boolean;
   /** Whether to automatically initialize map graph costs using this pathfinder instance. */
   autoComputeGraphCosts?: boolean;
+  /** Whether to simplify paths by merging segments with the same direction. */
+  autoSimplifyPath?: boolean;
 }
 
 /**

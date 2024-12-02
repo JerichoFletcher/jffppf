@@ -100,38 +100,38 @@ describe("A* pathfinder test for maps", () => {
     ];
     const links2 = [
       new DoorLink(
-        { point: { x: 299, y: 150 }, room: rooms2[0] },
-        { point: { x: 301, y: 150 }, room: rooms2[1] },
+        { point: { x: 299, y: 137 }, room: rooms2[0] },
+        { point: { x: 301, y: 137 }, room: rooms2[1] },
         "door_SW_SW_MID"
       ),
       new DoorLink(
-        { point: { x: 449, y: 150 }, room: rooms2[1] },
-        { point: { x: 451, y: 150 }, room: rooms2[7] },
+        { point: { x: 449, y: 137 }, room: rooms2[1] },
+        { point: { x: 451, y: 137 }, room: rooms2[7] },
         "door_corridor_SW_MID"
       ),
       new DoorLink(
-        { point: { x: 499, y: 150 }, room: rooms2[7] },
-        { point: { x: 501, y: 150 }, room: rooms2[2] },
+        { point: { x: 499, y: 163 }, room: rooms2[7] },
+        { point: { x: 501, y: 163 }, room: rooms2[2] },
         "door_corridor_SE"
       ),
       new DoorLink(
-        { point: { x: 400, y: 451 }, room: rooms2[7] },
-        { point: { x: 400, y: 449 }, room: rooms2[3] },
+        { point: { x: 437, y: 451 }, room: rooms2[7] },
+        { point: { x: 437, y: 449 }, room: rooms2[3] },
         "door_corridor_CENTER"
       ),
       new DoorLink(
-        { point: { x: 251, y: 300 }, room: rooms2[3] },
-        { point: { x: 249, y: 300 }, room: rooms2[4] },
+        { point: { x: 251, y: 313 }, room: rooms2[3] },
+        { point: { x: 249, y: 313 }, room: rooms2[4] },
         "door_CENTER_SIDE_1"
       ),
       new DoorLink(
-        { point: { x: 251, y: 400 }, room: rooms2[3] },
-        { point: { x: 249, y: 400 }, room: rooms2[5] },
+        { point: { x: 251, y: 413 }, room: rooms2[3] },
+        { point: { x: 249, y: 413 }, room: rooms2[5] },
         "door_CENTER_SIDE_2"
       ),
       new DoorLink(
-        { point: { x: 449, y: 300 }, room: rooms2[3] },
-        { point: { x: 451, y: 300 }, room: rooms2[6] },
+        { point: { x: 449, y: 313 }, room: rooms2[3] },
+        { point: { x: 451, y: 313 }, room: rooms2[6] },
         "door_CENTER_NE"
       ),
     ];

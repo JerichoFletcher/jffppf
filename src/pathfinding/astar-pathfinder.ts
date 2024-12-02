@@ -28,7 +28,9 @@ export class AstarPathfinder extends Pathfinder{
     this.#conf.cellNeighborStrategy ??= "8-way";
     this.#conf.distanceMode ??= "octile";
     this.#conf.turnPenalty ??= 0;
+    this.#conf.crossCorners ??= false;
     this.#conf.autoComputeGraphCosts ??= false;
+    this.#conf.autoSimplifyPath ??= true;
 
     // The open-set is a priority queue that sorts nodes based on the f-cost, which is the estimation of the optimal cost of a path
     // that passes through the node. We sort them such that nodes with the smallest f-cost gets processed first
@@ -314,8 +316,8 @@ export class AstarPathfinder extends Pathfinder{
     // Get the search grid for the room
     const roomGrid = AstarGrid.fromRoom(room, gridCellSize);
     
-    const startNode = roomGrid.worldToNode(src);
-    const endNode = roomGrid.worldToNode(dest);
+    const startNode = roomGrid.worldToNode(src, true);
+    const endNode = roomGrid.worldToNode(dest, true);
     
     // Validation
     if(startNode === null){
@@ -351,7 +353,11 @@ export class AstarPathfinder extends Pathfinder{
       }
 
       // Determine neighbors of the current node using the neighbor strategy, defaults to 8-way
-      const neighbors = roomGrid.neighborsOf(current, conf?.cellNeighborStrategy ?? this.#conf.cellNeighborStrategy!);
+      const neighbors = roomGrid.neighborsOf(
+        current,
+        conf?.cellNeighborStrategy ?? this.#conf.cellNeighborStrategy!,
+        conf?.crossCorners ?? this.#conf.crossCorners!
+      );
       
       for(const neighbor of neighbors){
         if(this.#closedNodeSet.has(neighbor)){
@@ -387,7 +393,7 @@ export class AstarPathfinder extends Pathfinder{
 
     // Retrace path from the resulting search tree
     if(success){
-      const path: AstarNode<Vec2Like>[] = [];
+      let path: AstarNode<Vec2Like>[] = [];
       let current: AstarNode<Vec2Like> | null = endNode;
 
       while(current !== null){
@@ -395,7 +401,14 @@ export class AstarPathfinder extends Pathfinder{
         current = current.parent;
       }
 
-      return { nodesVisited, success: true, path: this.simplifyPath(path.reverse()).map(p => ({ point: p, room })), cost: endNode.fCost };
+      path.reverse();
+      let finalPath: Vec2Like[];
+      if(conf?.autoSimplifyPath ?? this.#conf.autoSimplifyPath!){
+        finalPath = this.simplifyPath(path);
+      }else{
+        finalPath = path.map(p => p.data);
+      }
+      return { nodesVisited, success: true, path: finalPath.map(p => ({ point: p, room })), cost: endNode.fCost };
     }
 
     // No path is found
@@ -533,19 +546,21 @@ class AstarGrid{
   /**
    * Gets the node at a world position.
    * @param pos The world position.
+   * @param withTolerance Whether to use 1-cell tolerance.
    * @returns The corresponding node at `pos`.
    */
-  worldToNode(pos: Vec2Like): AstarNode<Vec2Like> | null{
+  worldToNode(pos: Vec2Like, withTolerance: boolean = false): AstarNode<Vec2Like> | null{
     const cell = this.worldToCell(pos);
-    return this.cellToNode(cell);
+    return this.cellToNode(cell, withTolerance);
   }
 
   /**
    * Gets the node at a cell position.
    * @param cell The grid space position.
+   * @param withTolerance Whether to use 1-cell tolerance.
    * @returns The corresponding node at `cell`.
    */
-  cellToNode(cell: Vec2Like): AstarNode<Vec2Like> | null{
+  cellToNode(cell: Vec2Like, withTolerance: boolean = false): AstarNode<Vec2Like> | null{
     if(
       0 <= cell.x && cell.x < this.#gridDim.x
       && 0 <= cell.y && cell.y < this.#gridDim.y
@@ -554,6 +569,10 @@ class AstarGrid{
       if(found !== null){
         return this.#nodes[cell.x][cell.y];
       }
+    }
+
+    if(!withTolerance){
+      return null;
     }
 
     // Apply a 1-cell tolerance
@@ -612,9 +631,10 @@ class AstarGrid{
    * Finds the neighbors of a given node.
    * @param node The reference node.
    * @param neighborStrategy How to select cells as neighbors.
+   * @param crossCorners Whether crossing obstacle corners is allowed.
    * @returns An array of nodes neighboring `node`.
    */
-  neighborsOf(node: AstarNode<Vec2Like>, neighborStrategy: NeighborStrategy): AstarNode<Vec2Like>[]{
+  neighborsOf(node: AstarNode<Vec2Like>, neighborStrategy: NeighborStrategy, crossCorners: boolean): AstarNode<Vec2Like>[]{
     const cell = this.worldToCell(node.data);
     const neighbors: AstarNode<Vec2Like>[] = [];
 
@@ -624,9 +644,23 @@ class AstarGrid{
         for(let dx = -1; dx <= 1; dx += 2){
           for(let dy = -1; dy <= 1; dy += 2){
             nextNeighbor = this.cellToNode({ x: cell.x + dx, y: cell.y + dy });
-            if(nextNeighbor !== null){
-              neighbors.push(nextNeighbor);
+            if(nextNeighbor === null){
+              continue;
             }
+
+            // Check corners if crossing them is not allowed
+            if(!crossCorners){
+              const corner1 = this.cellToNode({ x: cell.x + dx, y: cell.y });
+              if(corner1 === null){
+                continue;
+              }
+              const corner2 = this.cellToNode({ x: cell.x, y: cell.y + dy });
+              if(corner2 === null){
+                continue;
+              }
+            }
+
+            neighbors.push(nextNeighbor);
           }
         }
 
