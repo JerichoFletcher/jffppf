@@ -61,7 +61,7 @@ export class AstarPathfinder extends Pathfinder{
   public mapPointToRoom(graph: TraversalGraph, src: Vec2Like, dest: Room, conf?: PathfindingConfig): PathResult<RoomPoint>{
     if(!graph.initialized){
       if(conf?.autoComputeGraphCosts ?? this.#conf.autoComputeGraphCosts!){
-        graph.computeCosts(this);
+        graph.computeCosts(this, conf);
       }else{
         throw new Error("Graph is not initialized");
       }
@@ -117,7 +117,7 @@ export class AstarPathfinder extends Pathfinder{
   public mapPointToPoint(graph: TraversalGraph, src: Vec2Like, dest: Vec2Like, conf?: PathfindingConfig): PathResult<RoomPoint>{
     if(!graph.initialized){
       if(conf?.autoComputeGraphCosts ?? this.#conf.autoComputeGraphCosts!){
-        graph.computeCosts(this);
+        graph.computeCosts(this, conf);
       }else{
         throw new Error("Graph is not initialized");
       }
@@ -164,7 +164,7 @@ export class AstarPathfinder extends Pathfinder{
   public mapRoomToRoom(graph: TraversalGraph, src: Room, dest: Room, conf?: PathfindingConfig): PathResult<LinkDirection>{
     if(!graph.initialized){
       if(conf?.autoComputeGraphCosts ?? this.#conf.autoComputeGraphCosts!){
-        graph.computeCosts(this);
+        graph.computeCosts(this, conf);
       }else{
         throw new Error("Graph is not initialized");
       }
@@ -320,11 +320,11 @@ export class AstarPathfinder extends Pathfinder{
     // Validation
     if(startNode === null){
       const startPos = roomGrid.worldToCell(src);
-      throw new Error(`A* path search failed (start position [${startPos.x}, ${startPos.y}] is outside of the room)`);
+      throw new Error(`A* path search failed (start position (${src.x}, ${src.y}) [${startPos.x}, ${startPos.y}] is outside of the room)`);
     }
     if(endNode === null){
       const endPos = roomGrid.worldToCell(dest);
-      throw new Error(`A* path search failed (end position [${endPos.x}, ${endPos.y}] is outside of the room)`);
+      throw new Error(`A* path search failed (end position (${dest.x}, ${dest.y}) [${endPos.x}, ${endPos.y}] is outside of the room)`);
     }
     
     // Initialization
@@ -550,9 +550,37 @@ class AstarGrid{
       0 <= cell.x && cell.x < this.#gridDim.x
       && 0 <= cell.y && cell.y < this.#gridDim.y
     ){
-      return this.#nodes[cell.x][cell.y];
+      const found = this.#nodes[cell.x][cell.y];
+      if(found !== null){
+        return this.#nodes[cell.x][cell.y];
+      }
     }
 
+    // Apply a 1-cell tolerance
+    const candidates = [];
+    for(let dx = -1; dx <= 1; dx++){
+      for(let dy = -1; dy <= 1; dy++){
+        if(dx === 0 && dy === 0){
+          continue;
+        }
+
+        const x2 = cell.x + dx;
+        const y2 = cell.y + dy;
+
+        if(0 <= x2 && x2 < this.#gridDim.x && 0 <= y2 && y2 < this.#gridDim.y){
+          const neighbor = this.#nodes[cell.x + dx][cell.y + dy];
+          if(neighbor !== null){
+            candidates.push(neighbor);
+          }
+        }
+      }
+    }
+
+    if(candidates.length > 0){
+      candidates.sort((a, b) => a.pos.sub(cell).sqrMagnitude - b.pos.sub(cell).sqrMagnitude);
+      return candidates[0];
+    }
+    
     return null;
   }
 

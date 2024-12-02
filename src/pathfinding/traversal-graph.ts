@@ -1,7 +1,7 @@
 import RoomMap from "@/mapping/room-map";
 import Room from "@/mapping/room";
 import Link from "@/mapping/link";
-import Pathfinder from "./pathfinder";
+import Pathfinder, { PathfindingConfig } from "./pathfinder";
 
 /**
  * An object that stores information about inter-link pathfinding costs in each room.
@@ -89,8 +89,9 @@ export class TraversalGraph{
   /**
    * Calculate the costs of travelling between each link in each room.
    * @param pather The pathfinding module to use to compute the costs.
+   * @param conf Additional pathfinding configuration.
    */
-  public computeCosts(pather: Pathfinder){
+  public computeCosts(pather: Pathfinder, conf?: PathfindingConfig){
     // Reset the current cost map
     this.#costs = {};
 
@@ -112,7 +113,7 @@ export class TraversalGraph{
           const inPoint = inLink.exits.find(p => p.room.id === room.id)!;
           const outPoint = outLink.entrances.find(p => p.room.id === room.id)!;
 
-          const pathResult = pather.roomPointToPoint(room, inPoint.point, outPoint.point);
+          const pathResult = pather.roomPointToPoint(room, inPoint.point, outPoint.point, conf);
           const cost = pathResult.success ? pathResult.cost : Infinity;
 
           this.#costs[room.id]![inLink.id]![outLink.id] = cost;
