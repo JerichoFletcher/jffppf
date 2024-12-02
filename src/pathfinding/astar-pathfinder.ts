@@ -1,50 +1,46 @@
-import { DistanceFunction } from "@/math/distance";
-import Pathfinder, { PathResult } from "./pathfinder";
-import RoomMap from "@/mapping/room-map";
+import Pathfinder, { LinkDirection, NeighborStrategy, PathfindingConfig, PathResult } from "./pathfinder";
 import { Vec2Like, Vec2, Distance } from "@/math";
 import Room from "@/mapping/room";
 import PriorityQueue from "js-priority-queue";
-
-/** How to determine the neighbors of each cell in room grids. */
-export type NeighborStrategy = "4-way" | "8-way";
-/** How to compute the distance between two points. */
-export type DistanceMode = "manhattan" | "octile" | "euclidean" | DistanceFunction;
-
-/**
- * Parameters and configurations for pathfinding using the A* algorithm.
- */
-export interface AstarPathfindingConfig{
-  /** The size (width and height) of each cell in room grids. Smaller values lead to finer-grained in-room pathing, at the cost of heavier workload. */
-  roomGridCellSize?: number;
-  /** How to determine the neighbors of each cell in room grids. */
-  neighborStrategy?: NeighborStrategy;
-  /** How to compute distances between points in the map. May accept a custom distance function. */
-  distanceMode?: DistanceMode;
-  /** The penalty for each turning point in the path. Values greater than 0 favors paths with fewer turns. */
-  turnPenalty?: number;
-}
+import { TraversalGraph } from "./traversal-graph";
+import Link from "@/mapping/link";
 
 /**
  * Encapsulates an instance of pathfinder that uses the A* algorithm.
  */
 export class AstarPathfinder extends Pathfinder{
-  #conf: AstarPathfindingConfig;
-  #openSet: PriorityQueue<AstarNode>;
-  #checkSet: Set<AstarNode>;
-  #closedSet: Set<AstarNode>;
+  #conf: PathfindingConfig;
+
+  #openLinkSet: PriorityQueue<AstarNode<LinkDirection>>;
+  #checkLinkSet: Map<Link, AstarNode<LinkDirection>>;
+  #closedLinkSet: Set<Link>;
+
+  #openNodeSet: PriorityQueue<AstarNode<Vec2Like>>;
+  #checkNodeSet: Set<AstarNode<Vec2Like>>;
+  #closedNodeSet: Set<AstarNode<Vec2Like>>;
   
-  constructor(conf?: AstarPathfindingConfig){
+  constructor(conf?: PathfindingConfig){
     super();
 
     this.#conf = conf ?? {};
     this.#conf.roomGridCellSize ??= 1;
-    this.#conf.neighborStrategy ??= "8-way";
+    this.#conf.cellNeighborStrategy ??= "8-way";
     this.#conf.distanceMode ??= "octile";
     this.#conf.turnPenalty ??= 0;
+    this.#conf.autoComputeGraphCosts ??= false;
 
     // The open-set is a priority queue that sorts nodes based on the f-cost, which is the estimation of the optimal cost of a path
     // that passes through the node. We sort them such that nodes with the smallest f-cost gets processed first
-    this.#openSet = new PriorityQueue<AstarNode>({
+    this.#openNodeSet = new PriorityQueue({
+      comparator: (a, b) => {
+        let comp = a.fCost - b.fCost;
+        if(comp === 0){
+          comp = a.hCost - b.hCost;
+        }
+        return comp;
+      }
+    });
+    this.#openLinkSet = new PriorityQueue({
       comparator: (a, b) => {
         let comp = a.fCost - b.fCost;
         if(comp === 0){
@@ -54,16 +50,27 @@ export class AstarPathfinder extends Pathfinder{
       }
     });
 
-    this.#checkSet = new Set<AstarNode>();
-    this.#closedSet = new Set<AstarNode>();
+    this.#checkNodeSet = new Set();
+    this.#closedNodeSet = new Set();
+
+    this.#checkLinkSet = new Map();
+    this.#closedLinkSet = new Set();
   }
 
-  public mapPointToRoom(map: RoomMap, src: Vec2Like, dest: Room): PathResult{
-    if(!map.rooms.has(dest.id)){
+  public mapPointToRoom(graph: TraversalGraph, src: Vec2Like, dest: Room, conf?: PathfindingConfig): PathResult<Vec2Like>{
+    if(!graph.initialized){
+      if(conf?.autoComputeGraphCosts ?? this.#conf.autoComputeGraphCosts!){
+        graph.computeCosts(this);
+      }else{
+        throw new Error("Graph is not initialized");
+      }
+    }
+
+    if(!graph.map.rooms.has(dest.id)){
       throw new Error("Destination room is not part of the map");
     }
     
-    const roomStart = map.pointToRoom(src);
+    const roomStart = graph.map.pointToRoom(src);
     if(roomStart === null){
       throw new Error("Origin point is outside of any room in the map");
     }
@@ -79,9 +86,17 @@ export class AstarPathfinder extends Pathfinder{
     return { nodesVisited: 0, success: false };
   }
 
-  public mapPointToPoint(map: RoomMap, src: Vec2Like, dest: Vec2Like): PathResult{
-    const roomStart = map.pointToRoom(src);
-    const roomEnd = map.pointToRoom(dest);
+  public mapPointToPoint(graph: TraversalGraph, src: Vec2Like, dest: Vec2Like, conf?: PathfindingConfig): PathResult<Vec2Like>{
+    if(!graph.initialized){
+      if(conf?.autoComputeGraphCosts ?? this.#conf.autoComputeGraphCosts!){
+        graph.computeCosts(this);
+      }else{
+        throw new Error("Graph is not initialized");
+      }
+    }
+
+    const roomStart = graph.map.pointToRoom(src);
+    const roomEnd = graph.map.pointToRoom(dest);
 
     if(roomStart === null){
       throw new Error("Origin point is outside of any room in the map");
@@ -90,7 +105,7 @@ export class AstarPathfinder extends Pathfinder{
       throw new Error("Destination point is outside of any room in the map");
     }
 
-    // Path search can be simplified if both points are located in the same room
+    // No search is required if both points are located in the same room
     if(roomStart === roomEnd){
       return this.roomPointToPoint(roomStart, src, dest);
     }
@@ -101,7 +116,130 @@ export class AstarPathfinder extends Pathfinder{
     return { nodesVisited: 0, success: false };
   }
 
-  public roomPointToPoint(room: Room, src: Vec2Like, dest: Vec2Like, conf?: AstarPathfindingConfig): PathResult{
+  public mapRoomToRoom(graph: TraversalGraph, src: Room, dest: Room, conf?: PathfindingConfig): PathResult<LinkDirection>{
+    if(!graph.initialized){
+      if(conf?.autoComputeGraphCosts ?? this.#conf.autoComputeGraphCosts!){
+        graph.computeCosts(this);
+      }else{
+        throw new Error("Graph is not initialized");
+      }
+    }
+
+    if(!graph.map.rooms.has(src.id)){
+      throw new Error("Origin room is not in the map");
+    }
+    if(!graph.map.rooms.has(dest.id)){
+      throw new Error("Destination room is not in the map");
+    }
+
+    // No links should be traversed if we're already in the destination room
+    if(src.id === dest.id){
+      return { nodesVisited: 0, success: true, path: [], cost: 0 };
+    }
+
+    // Determine what distance function to use
+    let distFunc = conf?.distanceMode ?? this.#conf.distanceMode!;
+    if(typeof distFunc === "string"){
+      switch(distFunc){
+        case "euclidean":
+          distFunc = Distance.euclidean;
+          break;
+        case "manhattan":
+          distFunc = Distance.manhattan;
+          break;
+        case "octile":
+          distFunc = Distance.octile;
+          break;
+      }
+    }
+
+    // Initialization
+    let nodesVisited = 0;
+    let lastLink: AstarNode<LinkDirection> | null = null;
+
+    this.#openLinkSet.clear();
+    this.#checkLinkSet.clear();
+    this.#closedLinkSet.clear();
+
+    // Add links directly accessible from the starting room
+    for(const link of graph.map.linksFrom(src)){
+      const entrance = link.entrances.find(p => p.room.id === src.id)!;
+      const exit = link.exits.find(p => p.room.id !== entrance.room.id)!;
+
+      const node = new AstarNode<LinkDirection>(entrance.point, { link, entrance, exit });
+      node.hCost = link.cost + distFunc(exit.point, dest.centroid);
+
+      this.#openLinkSet.queue(node);
+    }
+
+    // Keep looping until no more links are available
+    while(this.#openLinkSet.length > 0){
+      const current = this.#openLinkSet.dequeue();
+      const { link, exit } = current.data;
+      this.#closedLinkSet.add(link);
+
+      nodesVisited++;
+
+      // Bail if we have reached the end room and begin path retracing
+      if(exit.room.id === dest.id){
+        lastLink = current;
+        break;
+      }
+
+      // Determine neighboring links, which are links accessible from the current room
+      const neighbors = graph.map.linksFrom(exit.room);
+
+      for(const nextLink of neighbors){
+        if(this.#closedLinkSet.has(nextLink)){
+          continue;
+        }
+        const nextEntrance = nextLink.entrances.find(p => p.room.id === exit.room.id)!;
+        const nextExit = nextLink.exits.find(p => p.room.id !== nextEntrance?.room.id)!;
+
+        // Calculate g-cost for the link and override if the neighbor link has a greater g-cost
+        const currGCost = current.gCost + graph.costOf(exit.room, link, nextLink);
+        let neighborNode = this.#checkLinkSet.get(nextLink);
+
+        if(!neighborNode || currGCost < neighborNode.gCost){
+          if(!neighborNode){
+            neighborNode = new AstarNode(nextEntrance.point, {
+              link: nextLink,
+              entrance: nextEntrance,
+              exit: nextExit,
+            });
+          }
+          
+          neighborNode.parent = current;
+          neighborNode.gCost = currGCost;
+          neighborNode.hCost = nextLink.cost + distFunc(nextExit.point, dest.centroid);
+
+          // Consider the link for evaluation
+          if(!this.#checkLinkSet.has(nextLink)){
+            this.#openLinkSet.queue(neighborNode);
+            this.#checkLinkSet.set(nextLink, neighborNode);
+          }
+        }
+      }
+    }
+    
+    // Retrace path from the resulting search tree
+    if(lastLink !== null){
+      const path: AstarNode<LinkDirection>[] = [];
+      let current: AstarNode<LinkDirection> | null = lastLink;
+
+      while(current !== null){
+        path.push(current);
+        current = current.parent;
+      }
+
+      return { nodesVisited, success: true, path: path.reverse().map(n => n.data), cost: lastLink.fCost };
+    }
+
+    // No path is found
+    return { nodesVisited, success: false };
+  }
+
+  public roomPointToPoint(room: Room, src: Vec2Like, dest: Vec2Like, conf?: PathfindingConfig): PathResult<Vec2Like>{
     if(!room.isPointInside(src)){
       throw new Error("Origin point is outside of the room");
     }
@@ -148,16 +286,16 @@ export class AstarPathfinder extends Pathfinder{
     let nodesVisited = 0;
     let success = false;
     
-    this.#openSet.clear();
-    this.#checkSet.clear();
-    this.#closedSet.clear();
+    this.#openNodeSet.clear();
+    this.#checkNodeSet.clear();
+    this.#closedNodeSet.clear();
     
-    this.#openSet.queue(startNode);
+    this.#openNodeSet.queue(startNode);
     
     // Keep looping until no more nodes are available
-    while(this.#openSet.length > 0){
-      const current = this.#openSet.dequeue();
-      this.#closedSet.add(current);
+    while(this.#openNodeSet.length > 0){
+      const current = this.#openNodeSet.dequeue();
+      this.#closedNodeSet.add(current);
 
       nodesVisited++;
 
@@ -168,25 +306,25 @@ export class AstarPathfinder extends Pathfinder{
       }
 
       // Determine neighbors of the current node using the neighbor strategy, defaults to 8-way
-      const neighbors = roomGrid.neighborsOf(current, conf?.neighborStrategy ?? this.#conf.neighborStrategy!);
+      const neighbors = roomGrid.neighborsOf(current, conf?.cellNeighborStrategy ?? this.#conf.cellNeighborStrategy!);
       
       for(const neighbor of neighbors){
-        if(this.#closedSet.has(neighbor)){
+        if(this.#closedNodeSet.has(neighbor)){
           continue;
         }
 
         // Calculate the g-cost and overwrite if the current value is better than the old one
-        const currGCost = current.gCost + distFunc(current.pos, neighbor.pos);
-        if(!this.#checkSet.has(neighbor) || currGCost < neighbor.gCost){
+        const currGCost = current.gCost + distFunc(current.data, neighbor.data);
+        if(!this.#checkNodeSet.has(neighbor) || currGCost < neighbor.gCost){
           neighbor.parent = current;
           neighbor.gCost = currGCost;
-          neighbor.hCost = distFunc(neighbor.pos, endNode.pos);
+          neighbor.hCost = distFunc(neighbor.data, endNode.data);
 
           // If turning point penalty is nonzero, add the penalty to the node's h-cost
           const turnPenalty = conf?.turnPenalty ?? this.#conf.turnPenalty!;
           if(turnPenalty !== 0 && neighbor.parent.parent){
-            const oldDir = neighbor.parent.cell.sub(neighbor.parent.parent.cell);
-            const newDir = neighbor.cell.sub(neighbor.parent.cell);
+            const oldDir = neighbor.parent.pos.sub(neighbor.parent.parent.pos);
+            const newDir = neighbor.pos.sub(neighbor.parent.pos);
 
             if(!oldDir.equals(newDir)){
               neighbor.hCost += turnPenalty;
@@ -194,9 +332,9 @@ export class AstarPathfinder extends Pathfinder{
           }
 
           // Consider this node for evaluation
-          if(!this.#checkSet.has(neighbor)){
-            this.#openSet.queue(neighbor);
-            this.#checkSet.add(neighbor);
+          if(!this.#checkNodeSet.has(neighbor)){
+            this.#openNodeSet.queue(neighbor);
+            this.#checkNodeSet.add(neighbor);
           }
         }
       }
@@ -204,8 +342,8 @@ export class AstarPathfinder extends Pathfinder{
 
     // Retrace path from the resulting search tree
     if(success){
-      const path: AstarNode[] = [];
-      let current: AstarNode | null = endNode;
+      const path: AstarNode<Vec2Like>[] = [];
+      let current: AstarNode<Vec2Like> | null = endNode;
 
       while(current !== null){
         path.push(current);
@@ -225,12 +363,12 @@ export class AstarPathfinder extends Pathfinder{
    * @param roomGrid The search grid of the room.
    * @returns The simplified path.
    */
-  private simplifyPath(path: AstarNode[]): Vec2Like[]{
+  private simplifyPath(path: AstarNode<Vec2Like>[]): Vec2Like[]{
     if(path.length === 0){
       return [];
     }
     if(path.length === 1){
-      return [path[0].pos];
+      return [path[0].data];
     }
 
     const pathSimple: Vec2Like[] = [];
@@ -238,15 +376,15 @@ export class AstarPathfinder extends Pathfinder{
 
     // If the direction between each pair differs from the previous pair, add its first node (the turning point) to the simplified path
     for(let i = 1; i < path.length; i++){
-      const newDir = Vec2.fromVec2Like(path[i - 1].cell).sub(path[i].cell);
+      const newDir = Vec2.fromVec2Like(path[i - 1].data).sub(path[i].data);
       
       if(!currDir.equals(newDir)){
-        pathSimple.push(path[i - 1].pos);
+        pathSimple.push(path[i - 1].data);
       }
       currDir = newDir;
     }
 
-    pathSimple.push(path[path.length - 1].pos);
+    pathSimple.push(path[path.length - 1].data);
     return pathSimple.map(v => { return { x: v.x, y: v.y }; });
   }
 }
@@ -254,13 +392,13 @@ export class AstarPathfinder extends Pathfinder{
 /**
  * Represents a node in a search tree.
  */
-class AstarNode{
+class AstarNode<T>{
   #pos: Vec2;
-  #cell: Vec2;
+  #data: T;
 
-  constructor(pos: Vec2Like, cell: Vec2Like){
+  constructor(pos: Vec2Like, data: T){
     this.#pos = Vec2.fromVec2Like(pos);
-    this.#cell = Vec2.fromVec2Like(cell);
+    this.#data = data;
 
     this.parent = null;
     this.gCost = 0;
@@ -268,7 +406,7 @@ class AstarNode{
   }
 
   /** The precedence of this node in the search tree. Primarily used for path retracing. */
-  parent: AstarNode | null;
+  parent: AstarNode<T> | null;
   /** The path cost from this node to the root (start) node. */
   gCost: number;
   /** The estimated (heuristic) cost from this node to the end node. */
@@ -279,9 +417,9 @@ class AstarNode{
     return this.#pos;
   }
 
-  /** The grid space position associated with this node. */
-  get cell(): Vec2{
-    return this.#cell;
+  /** The data attached to this node. */
+  get data(): T{
+    return this.#data;
   }
 
   /** The estimated cost of the optimal path going through this node. */
@@ -294,7 +432,7 @@ class AstarNode{
  * Represents a grid of search nodes.
  */
 class AstarGrid{
-  #nodes: (AstarNode | null)[][];
+  #nodes: (AstarNode<Vec2Like> | null)[][];
   #gridDim: Vec2;
   #cellSize: number;
   #origin: Vec2;
@@ -337,9 +475,9 @@ class AstarGrid{
     // Add nodes at cells whose center point lies inside the room
     for(let x = 0; x < gridDim.x; x++){
       for(let y = 0; y < gridDim.y; y++){
-        const pos = grid.cellToWorld({ x, y });
-        if(room.isPointInside(pos)){
-          grid.#nodes[x][y] = new AstarNode(pos, { x, y });
+        const worldPos = grid.cellToWorld({ x, y });
+        if(room.isPointInside(worldPos)){
+          grid.#nodes[x][y] = new AstarNode({ x, y }, worldPos);
         }
       }
     }
@@ -352,7 +490,7 @@ class AstarGrid{
    * @param pos The world position.
    * @returns The corresponding node at `pos`.
    */
-  worldToNode(pos: Vec2Like): AstarNode | null{
+  worldToNode(pos: Vec2Like): AstarNode<Vec2Like> | null{
     const cell = this.worldToCell(pos);
     return this.cellToNode(cell);
   }
@@ -362,7 +500,7 @@ class AstarGrid{
    * @param cell The grid space position.
    * @returns The corresponding node at `cell`.
    */
-  cellToNode(cell: Vec2Like): AstarNode | null{
+  cellToNode(cell: Vec2Like): AstarNode<Vec2Like> | null{
     if(
       0 <= cell.x && cell.x < this.#gridDim.x
       && 0 <= cell.y && cell.y < this.#gridDim.y
@@ -403,11 +541,11 @@ class AstarGrid{
    * @param neighborStrategy How to select cells as neighbors.
    * @returns An array of nodes neighboring `node`.
    */
-  neighborsOf(node: AstarNode, neighborStrategy: NeighborStrategy): AstarNode[]{
-    const cell = this.worldToCell(node.pos);
-    const neighbors: AstarNode[] = [];
+  neighborsOf(node: AstarNode<Vec2Like>, neighborStrategy: NeighborStrategy): AstarNode<Vec2Like>[]{
+    const cell = this.worldToCell(node.data);
+    const neighbors: AstarNode<Vec2Like>[] = [];
 
-    let nextNeighbor: AstarNode | null;
+    let nextNeighbor: AstarNode<Vec2Like> | null;
     switch(neighborStrategy){
       case "8-way":
         for(let dx = -1; dx <= 1; dx += 2){

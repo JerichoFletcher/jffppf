@@ -6,7 +6,7 @@ import Pathfinder from "./pathfinder";
 /**
  * An object that stores information about inter-link pathfinding costs in each room.
  */
-interface CostMap{
+export interface CostMap{
   /** Cost mappings applied for each link in a room. */
   [roomId: string]: undefined | {
     /** Cost mappings applied for each outgoing link in a room, relative to an incoming link. */
@@ -20,7 +20,7 @@ interface CostMap{
 /**
  * Represents a graph of traversal costs between rooms in a map.
  */
-export default class TraversalGraph{
+export class TraversalGraph{
   #map: RoomMap;
   #initialized: boolean;
   #costs: CostMap;
@@ -109,8 +109,8 @@ export default class TraversalGraph{
             continue;
           }
 
-          const inPoint = inLink.exits.filter(p => p.room.id === room.id)[0];
-          const outPoint = outLink.entrances.filter(p => p.room.id === room.id)[0];
+          const inPoint = inLink.exits.find(p => p.room.id === room.id)!;
+          const outPoint = outLink.entrances.find(p => p.room.id === room.id)!;
 
           const pathResult = pather.roomPointToPoint(room, inPoint.point, outPoint.point);
           const cost = pathResult.success ? pathResult.cost : Infinity;

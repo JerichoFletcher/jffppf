@@ -1,7 +1,7 @@
 import RectRoom from "@/mapping/rect-room";
 import { AstarPathfinder } from "@/pathfinding/astar-pathfinder";
 
-describe("A* pathfinder test", () => {
+describe("A* pathfinder test for rooms", () => {
   test("Pathfinding test inside a rectangular room, using octile + 8-way movement", () => {
     const room = new RectRoom({ x: 0, y: 0 }, { x: 8, y: 8 });
     const pather = new AstarPathfinder();
@@ -21,7 +21,7 @@ describe("A* pathfinder test", () => {
     // The ideal path has a cost of 7 + 7 = 14
     const result = pather.roomPointToPoint(room, { x: 0.5, y: 0.5 }, { x: 7.5, y: 7.5 }, {
       distanceMode: "manhattan",
-      neighborStrategy: "4-way",
+      cellNeighborStrategy: "4-way",
     });
     expect(result.success).toBeTruthy();
     expect(result.success && result.cost).toBeCloseTo(14);
