@@ -19,10 +19,10 @@ export default class RoomMap{
    * @param links Links connecting the rooms.
    */
   public constructor(rooms: Room[], links: Link[]){
-    this.#rooms = new Map<string, Room>();
-    this.#links = new Map<string, Link>();
-    this.#roomLinkEntranceMapping = new Map<string, string[]>();
-    this.#roomLinkExitMapping = new Map<string, string[]>();
+    this.#rooms = new Map();
+    this.#links = new Map();
+    this.#roomLinkEntranceMapping = new Map();
+    this.#roomLinkExitMapping = new Map();
 
     // Determine boundary limits
     let left = Infinity, right = -Infinity, bottom = Infinity, top = -Infinity;

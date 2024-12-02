@@ -4,6 +4,7 @@ import Room from "@/mapping/room";
 import PriorityQueue from "js-priority-queue";
 import { TraversalGraph } from "./traversal-graph";
 import Link from "@/mapping/link";
+import RoomPoint from "@/mapping/room-point";
 
 /**
  * Encapsulates an instance of pathfinder that uses the A* algorithm.
@@ -57,7 +58,7 @@ export class AstarPathfinder extends Pathfinder{
     this.#closedLinkSet = new Set();
   }
 
-  public mapPointToRoom(graph: TraversalGraph, src: Vec2Like, dest: Room, conf?: PathfindingConfig): PathResult<Vec2Like>{
+  public mapPointToRoom(graph: TraversalGraph, src: Vec2Like, dest: Room, conf?: PathfindingConfig): PathResult<RoomPoint>{
     if(!graph.initialized){
       if(conf?.autoComputeGraphCosts ?? this.#conf.autoComputeGraphCosts!){
         graph.computeCosts(this);
@@ -87,7 +88,7 @@ export class AstarPathfinder extends Pathfinder{
     }
 
     // For each room to be traversed in between links, compute the in-room path
-    const path: Vec2Like[] = [];
+    const path: RoomPoint[] = [];
     let nodesVisited = linkPathResult.nodesVisited;
     let cost = 0;
     let startPoint = {
@@ -103,7 +104,7 @@ export class AstarPathfinder extends Pathfinder{
         return { nodesVisited, success: false };
       }
 
-      path.push(...currentPath.path, entrance.point, exit.point);
+      path.push(...currentPath.path, entrance, exit);
       nodesVisited += currentPath.nodesVisited;
       cost += currentPath.cost;
 
@@ -113,7 +114,7 @@ export class AstarPathfinder extends Pathfinder{
     return { nodesVisited, success: true, path, cost };
   }
 
-  public mapPointToPoint(graph: TraversalGraph, src: Vec2Like, dest: Vec2Like, conf?: PathfindingConfig): PathResult<Vec2Like>{
+  public mapPointToPoint(graph: TraversalGraph, src: Vec2Like, dest: Vec2Like, conf?: PathfindingConfig): PathResult<RoomPoint>{
     if(!graph.initialized){
       if(conf?.autoComputeGraphCosts ?? this.#conf.autoComputeGraphCosts!){
         graph.computeCosts(this);
@@ -132,22 +133,23 @@ export class AstarPathfinder extends Pathfinder{
       throw new Error("Destination point is outside of any room in the map");
     }
 
-    // No search is required if both points are located in the same room
+    // Search can be simplified if both points are located in the same room
     if(roomSrc === roomDest){
       return this.roomPointToPoint(roomSrc, src, dest, conf);
     }
 
-    // Compute the global path to the room first, then append with in-room path
+    // Compute the global path to the room first
     const mapPathResult = this.mapPointToRoom(graph, src, roomDest, conf);
     if(!mapPathResult.success){
       return { nodesVisited: mapPathResult.nodesVisited, success: false };
     }
 
-    const roomPathResult = this.roomPointToPoint(roomDest, mapPathResult.path[mapPathResult.path.length - 1], dest, conf);
+    const roomPathResult = this.roomPointToPoint(roomDest, mapPathResult.path[mapPathResult.path.length - 1].point, dest, conf);
     if(!roomPathResult.success){
       return { nodesVisited: mapPathResult.nodesVisited + roomPathResult.nodesVisited, success: false };
     }
 
+    // Append with the remaining path inside the destination room
     const path = mapPathResult.path;
     path.push(...roomPathResult.path);
 
@@ -282,7 +284,7 @@ export class AstarPathfinder extends Pathfinder{
     return { nodesVisited, success: false };
   }
 
-  public roomPointToPoint(room: Room, src: Vec2Like, dest: Vec2Like, conf?: PathfindingConfig): PathResult<Vec2Like>{
+  public roomPointToPoint(room: Room, src: Vec2Like, dest: Vec2Like, conf?: PathfindingConfig): PathResult<RoomPoint>{
     if(!room.isPointInside(src)){
       throw new Error("Origin point is outside of the room");
     }
@@ -393,7 +395,7 @@ export class AstarPathfinder extends Pathfinder{
         current = current.parent;
       }
 
-      return { nodesVisited, success: true, path: this.simplifyPath(path.reverse()), cost: endNode.fCost };
+      return { nodesVisited, success: true, path: this.simplifyPath(path.reverse()).map(p => ({ point: p, room })), cost: endNode.fCost };
     }
 
     // No path is found

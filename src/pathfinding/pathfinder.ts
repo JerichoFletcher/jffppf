@@ -68,7 +68,7 @@ export default abstract class Pathfinder{
    * @param conf Additional pathfindng configurations.
    * @returns An array of points along which the result path goes, or an empty array if no such path exists.
    */
-  public abstract mapPointToRoom(graph: TraversalGraph, src: Vec2Like, dest: Room, conf?: PathfindingConfig): PathResult<Vec2Like>;
+  public abstract mapPointToRoom(graph: TraversalGraph, src: Vec2Like, dest: Room, conf?: PathfindingConfig): PathResult<RoomPoint>;
 
   /**
    * Computes a path between two points in a map.
@@ -78,7 +78,7 @@ export default abstract class Pathfinder{
    * @param conf Additional pathfindng configurations.
    * @returns An array of points along which the result path goes, or an empty array if no such path exists.
    */
-  public abstract mapPointToPoint(graph: TraversalGraph, src: Vec2Like, dest: Vec2Like, conf?: PathfindingConfig): PathResult<Vec2Like>;
+  public abstract mapPointToPoint(graph: TraversalGraph, src: Vec2Like, dest: Vec2Like, conf?: PathfindingConfig): PathResult<RoomPoint>;
 
   /**
    * Computes a path of links between two rooms in a map.
@@ -98,5 +98,5 @@ export default abstract class Pathfinder{
    * @param conf Additional pathfindng configurations.
    * @returns An array of points along which the result path goes, or an empty array if no such path exists.
    */
-  public abstract roomPointToPoint(room: Room, src: Vec2Like, dest: Vec2Like, conf?: PathfindingConfig): PathResult<Vec2Like>;
+  public abstract roomPointToPoint(room: Room, src: Vec2Like, dest: Vec2Like, conf?: PathfindingConfig): PathResult<RoomPoint>;
 }
