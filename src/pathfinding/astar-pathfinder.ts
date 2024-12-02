@@ -70,20 +70,47 @@ export class AstarPathfinder extends Pathfinder{
       throw new Error("Destination room is not part of the map");
     }
     
-    const roomStart = graph.map.pointToRoom(src);
-    if(roomStart === null){
+    const roomSrc = graph.map.pointToRoom(src);
+    if(roomSrc === null){
       throw new Error("Origin point is outside of any room in the map");
     }
 
     // No search is required if the origin point is located in the destination room
-    if(roomStart === dest){
+    if(roomSrc === dest){
       return { nodesVisited: 0, success: true, path: [], cost: 0 };
     }
 
-    /// TODO: Construct a traversal graph based on the provided map and compute a path using hierarchical A*
+    // Compute the coarse global path first as a sequence of links
+    const linkPathResult = this.mapRoomToRoom(graph, roomSrc, dest, conf);
+    if(!linkPathResult.success){
+      return { nodesVisited: linkPathResult.nodesVisited, success: false };
+    }
 
-    // No path is found
-    return { nodesVisited: 0, success: false };
+    // For each room to be traversed in between links, compute the in-room path
+    const path: Vec2Like[] = [];
+    let nodesVisited = linkPathResult.nodesVisited;
+    let cost = 0;
+    let startPoint = {
+      room: roomSrc,
+      point: src,
+    };
+
+    for(const { entrance, exit } of linkPathResult.path){
+      const currentPath = this.roomPointToPoint(startPoint.room, startPoint.point, entrance.point, conf);
+
+      // This block should never be entered if the map graph is initialized correctly
+      if(!currentPath.success){
+        return { nodesVisited, success: false };
+      }
+
+      path.push(...currentPath.path, entrance.point, exit.point);
+      nodesVisited += currentPath.nodesVisited;
+      cost += currentPath.cost;
+
+      startPoint = exit;
+    }
+
+    return { nodesVisited, success: true, path, cost };
   }
 
   public mapPointToPoint(graph: TraversalGraph, src: Vec2Like, dest: Vec2Like, conf?: PathfindingConfig): PathResult<Vec2Like>{
@@ -95,25 +122,41 @@ export class AstarPathfinder extends Pathfinder{
       }
     }
 
-    const roomStart = graph.map.pointToRoom(src);
-    const roomEnd = graph.map.pointToRoom(dest);
+    const roomSrc = graph.map.pointToRoom(src);
+    const roomDest = graph.map.pointToRoom(dest);
 
-    if(roomStart === null){
+    if(roomSrc === null){
       throw new Error("Origin point is outside of any room in the map");
     }
-    if(roomEnd === null){
+    if(roomDest === null){
       throw new Error("Destination point is outside of any room in the map");
     }
 
     // No search is required if both points are located in the same room
-    if(roomStart === roomEnd){
-      return this.roomPointToPoint(roomStart, src, dest);
+    if(roomSrc === roomDest){
+      return this.roomPointToPoint(roomSrc, src, dest, conf);
     }
 
-    /// TODO: Construct a traversal graph based on the provided map and compute a path using hierarchical A*
+    // Compute the global path to the room first, then append with in-room path
+    const mapPathResult = this.mapPointToRoom(graph, src, roomDest, conf);
+    if(!mapPathResult.success){
+      return { nodesVisited: mapPathResult.nodesVisited, success: false };
+    }
 
-    // No path is found
-    return { nodesVisited: 0, success: false };
+    const roomPathResult = this.roomPointToPoint(roomDest, mapPathResult.path[mapPathResult.path.length - 1], dest, conf);
+    if(!roomPathResult.success){
+      return { nodesVisited: mapPathResult.nodesVisited + roomPathResult.nodesVisited, success: false };
+    }
+
+    const path = mapPathResult.path;
+    path.push(...roomPathResult.path);
+
+    return {
+      nodesVisited: mapPathResult.nodesVisited + roomPathResult.nodesVisited,
+      success: true,
+      cost: mapPathResult.cost + roomPathResult.cost,
+      path,
+    };
   }
 
   public mapRoomToRoom(graph: TraversalGraph, src: Room, dest: Room, conf?: PathfindingConfig): PathResult<LinkDirection>{
@@ -200,7 +243,7 @@ export class AstarPathfinder extends Pathfinder{
         const currGCost = current.gCost + graph.costOf(exit.room, link, nextLink);
         let neighborNode = this.#checkLinkSet.get(nextLink);
 
-        if(!neighborNode || currGCost < neighborNode.gCost){
+        if(!neighborNode || currGCost < neighborNode.gCost && currGCost !== Infinity){
           if(!neighborNode){
             neighborNode = new AstarNode(nextEntrance.point, {
               link: nextLink,
