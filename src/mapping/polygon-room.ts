@@ -1,6 +1,5 @@
-import { Vec2, Lines, Vec2Like } from "@/math";
+import { Vec2, Lines, Vec2Like, Rect } from "@/math";
 import Room from "./room";
-import Rect from "@/math/rect";
 
 /**
  * Represents a polygonal room.
@@ -95,7 +94,7 @@ export default class PolygonRoom extends Room{
     }
 
     // Set the polygon bounding box
-    this.#boundary = new Rect({ x: left, y: bottom }, { x: right, y: top });
+    this.#boundary = Rect.fromCorners({ x: left, y: bottom }, { x: right, y: top });
   }
   
   public get centroid(): Vec2{

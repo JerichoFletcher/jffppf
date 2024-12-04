@@ -1,7 +1,7 @@
 import { Vec2, Vec2Like } from "@/math";
 import Link from "./link";
 import Room from "./room";
-import Rect from "@/math/rect";
+import { Rect } from "@/math";
 
 /**
  * Represents a space consisting of rooms that can be navigated through.
@@ -45,7 +45,7 @@ export default class RoomMap{
     }
 
     // Set the map bounding box
-    this.#boundary = new Rect({ x: left, y: bottom }, { x: right, y: top });
+    this.#boundary = Rect.fromCorners({ x: left, y: bottom }, { x: right, y: top });
     
     // Add links to the map
     for(const link of links){

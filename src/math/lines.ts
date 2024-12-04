@@ -1,4 +1,4 @@
-import Rect from "./rect";
+import { Rect } from "./rect";
 import { Vec2, Vec2Like } from "./vector2";
 
 /**
@@ -25,7 +25,7 @@ export function orientation(a: Vec2Like, b: Vec2Like, c: Vec2Like): number{
  * @returns Whether `P` is within the bounding box `AB`.
  */
 export function isWithinPoints(p: Vec2Like, a: Vec2Like, b: Vec2Like): boolean{
-  return new Rect(a, b).isWithin(p);
+  return Rect.fromCorners(a, b).isWithin(p);
 }
 
 /**

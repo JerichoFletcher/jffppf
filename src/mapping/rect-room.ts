@@ -1,6 +1,5 @@
-import { Vec2, Vec2Like } from "@/math";
+import { Vec2, Vec2Like, Rect } from "@/math";
 import Room from "./room";
-import Rect from "@/math/rect";
 
 /**
  * Represents a rectangular room.
@@ -21,7 +20,7 @@ export default class RectRoom extends Room{
     }
 
     super(id);
-    this.#bounds = new Rect(p1, p2);
+    this.#bounds = Rect.fromCorners(p1, p2);
   }
   
   public get centroid(): Vec2{

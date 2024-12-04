@@ -1,5 +1,4 @@
-import { Vec2, Vec2Like } from "@/math";
-import Rect from "@/math/rect";
+import { Vec2, Vec2Like, Rect } from "@/math";
 
 /**
  * Represents an arbitrary room.

@@ -1,10 +1,12 @@
+import { Serializable } from "@/util";
+
 /** Represents a 2D vector-like object type. */
 export type Vec2Like = Vec2 | { x: number, y: number };
 
 /**
  * Represents a vector (or point) on the 2D surface.
  */
-export class Vec2{
+export class Vec2 implements Serializable{
   #x: number;
   #y: number;
 
@@ -25,6 +27,19 @@ export class Vec2{
    */
   public static fromVec2Like(v: Vec2Like): Vec2{
     return v instanceof Vec2 ? v : new Vec2(v.x, v.y);
+  }
+
+  /**
+   * Attempts to deserializes a JSON object into an instance of this class.
+   * @param obj The serialized object.
+   * @returns The deserialized class instance.
+   */
+  public static fromJSON(obj: Record<string, any>): Vec2{
+    return new Vec2(obj["x"], obj["y"]);
+  }
+
+  public toJSON(): Record<string, any>{
+    return { x: this.#x, y: this.#y };
   }
 
   /** Shorthand for the zero vector, [0, 0]. */
