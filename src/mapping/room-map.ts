@@ -1,12 +1,13 @@
-import { Vec2, Vec2Like } from "@/math";
-import Link from "./link";
-import Room from "./room";
+import { Vec2Like } from "@/math";
+import { Room } from ".";
 import { Rect } from "@/math";
+import { Link } from "./link";
+import { Serializable } from "@/util";
 
 /**
  * Represents a space consisting of rooms that can be navigated through.
  */
-export default class RoomMap{
+export class RoomMap implements Serializable{
   #rooms: Map<string, Room>;
   #links: Map<string, Link>;
   #roomLinkEntranceMapping: Map<string, string[]>;
@@ -73,6 +74,24 @@ export default class RoomMap{
 
       this.#links.set(link.id, link);
     }
+  }
+
+  /**
+   * Attempts to deserializes a JSON object into an instance of this class.
+   * @param obj The serialized object.
+   * @returns The deserialized class instance.
+   */
+  public static fromJSON(obj: Record<string, any>): RoomMap{
+    const rooms = (obj.rooms as Record<string, any>[]).map(o => Room.fromJSON(o));
+    const links = (obj.links as Record<string, any>[]).map(o => Link.fromJSON(o));
+    return new RoomMap(rooms, links);
+  }
+
+  public toJSON(): Record<string, unknown>{
+    return {
+      rooms: [...this.#rooms.values()].map(r => r.toJSON()),
+      links: [...this.#links.values()].map(l => l.toJSON()),
+    };
   }
 
   /**

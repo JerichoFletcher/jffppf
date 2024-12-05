@@ -1,7 +1,7 @@
-import RoomMap from "@/mapping/room-map";
-import Room from "@/mapping/room";
-import Link from "@/mapping/link";
-import Pathfinder, { PathfindingConfig } from "./pathfinder";
+import { Room } from "@/mapping";
+import { Pathfinder, PathfindingConfig } from "./pathfinder";
+import { Link, RoomMap } from "@/mapping";
+import { Serializable } from "@/util";
 
 /**
  * An object that stores information about inter-link pathfinding costs in each room.
@@ -20,7 +20,7 @@ export interface CostMap{
 /**
  * Represents a graph of traversal costs between rooms in a map.
  */
-export class TraversalGraph{
+export class TraversalGraph implements Serializable{
   #map: RoomMap;
   #initialized: boolean;
   #costs: CostMap;
@@ -33,6 +33,24 @@ export class TraversalGraph{
     this.#map = map;
     this.#initialized = false;
     this.#costs = {};
+  }
+
+  /**
+   * Attempts to deserializes a JSON object into an instance of this class.
+   * @param obj The serialized object.
+   * @returns The deserialized class instance.
+   */
+  public static fromJSON(obj: Record<string, any>): TraversalGraph{
+    const graph = new TraversalGraph(RoomMap.fromJSON(obj.map));
+    graph.costs = obj.costs;
+    return graph;
+  }
+
+  public toJSON(): Record<string, unknown>{
+    return {
+      map: this.#map.toJSON(),
+      costs: this.#costs,
+    }
   }
 
   /** The map represented by this graph. */

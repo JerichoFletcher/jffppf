@@ -1,12 +1,12 @@
 import { Vec2 } from "@/math";
-import Link from "./link";
-import Room from "./room";
-import RoomPoint from "./room-point";
+import { Room } from ".";
+import { RoomPoint, roomPointFromJSON, roomPointToJSON } from "./room-point";
+import { Link } from "./link";
 
 /**
  * Represents a door that connects two rooms.
  */
-export default class DoorLink extends Link{
+export class DoorLink extends Link{
   #point1: RoomPoint;
   #point2: RoomPoint;
   #linkLength: number;
@@ -31,6 +31,26 @@ export default class DoorLink extends Link{
     this.#point1 = { ...p1 };
     this.#point2 = { ...p2 };
     this.#linkLength = Vec2.fromVec2Like(this.#point1.point).sub(this.#point2.point).magnitude;
+  }
+
+  /**
+   * Attempts to deserializes a JSON object into an instance of this class.
+   * @param obj The serialized object.
+   * @returns The deserialized class instance.
+   */
+  public static fromJSON(obj: Record<string, any>): DoorLink{
+    if(obj.type !== "door")throw new Error("Link type is not 'door'");
+    const point1 = roomPointFromJSON(obj.point1);
+    const point2 = roomPointFromJSON(obj.point2);
+    return new DoorLink(point1, point2, obj.id);
+  }
+
+  public toJSON(): Record<string, unknown>{
+    const obj = super.toJSON();
+    obj.type = "door";
+    obj.point1 = roomPointToJSON(this.#point1);
+    obj.point2 = roomPointToJSON(this.#point2);
+    return obj;
   }
 
   public get cost(): number{

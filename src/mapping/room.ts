@@ -1,9 +1,11 @@
 import { Vec2, Vec2Like, Rect } from "@/math";
+import { Serializable } from "@/util";
 
 /**
  * Represents an arbitrary room.
  */
-export default abstract class Room{
+export abstract class Room implements Serializable{
+  static #roomReg = new Map<string, Room>();
   static #incrId: number = 0;
 
   #id: string;
@@ -13,7 +15,35 @@ export default abstract class Room{
    * @param id The identifier of the room.
    */
   public constructor(id?: string){
-    this.#id = id || `room_${Room.#incrId++}`;
+    if(id && Room.#roomReg.has(id)){
+      throw new Error(`Room with ID '${id}' already exists`);
+    }
+
+    do{
+      this.#id = id || `room_${Room.#incrId++}`;
+    }while(Room.#roomReg.has(this.#id));
+    Room.#roomReg.set(this.#id, this);
+  }
+
+  /**
+   * Attempts to deserializes a JSON object into an instance of this class.
+   * @param obj The serialized object.
+   * @returns The deserialized class instance.
+   */
+  public static fromJSON(obj: Record<string, any>): Room{
+    switch(obj.type){
+      case "rect": return RectRoom.fromJSON(obj);
+      case "poly": return PolygonRoom.fromJSON(obj);
+      default: throw new Error(`Unknown room type '${obj.type}'`);
+    }
+  }
+
+  public static find<T extends Room>(id: string): T | undefined{
+    return Room.#roomReg.get(id) as (T | undefined);
+  }
+
+  public toJSON(): Record<string, unknown>{
+    return { id: this.#id };
   }
   
   /**
@@ -45,3 +75,6 @@ export default abstract class Room{
   */
   public abstract isPointInside(point: Vec2Like): boolean;
 }
+
+import { RectRoom } from ".";
+import { PolygonRoom } from ".";

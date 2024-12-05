@@ -35,7 +35,7 @@ export class Vec2 implements Serializable{
    * @returns The deserialized class instance.
    */
   public static fromJSON(obj: Record<string, any>): Vec2{
-    return new Vec2(obj["x"], obj["y"]);
+    return new Vec2(obj.x, obj.y);
   }
 
   public toJSON(): Record<string, any>{

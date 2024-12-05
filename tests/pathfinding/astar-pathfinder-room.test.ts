@@ -1,4 +1,4 @@
-import RectRoom from "@/mapping/rect-room";
+import { RectRoom } from "@/mapping";
 import { AstarPathfinder } from "@/pathfinding/astar-pathfinder";
 
 describe("A* pathfinder test for rooms", () => {

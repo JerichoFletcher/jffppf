@@ -1,11 +1,13 @@
 import { Vec2 } from "@/math/vector2";
-import Room from "./room";
-import RoomPoint from "./room-point";
+import { Room } from ".";
+import { RoomPoint } from ".";
+import { Serializable } from "@/util";
 
 /**
  * An abstraction of links between different rooms. May represent doors or stairs.
  */
-export default abstract class Link{
+export abstract class Link implements Serializable{
+  static #linkReg = new Map<string, Link>();
   static #incrId: number = 0;
 
   #id: string;
@@ -15,7 +17,34 @@ export default abstract class Link{
    * @param id The identifier of the link.
    */
   public constructor(id?: string){
-    this.#id = id || `link_${Link.#incrId++}`;
+    if(id && Link.#linkReg.has(id)){
+      throw new Error(`Link with ID '${id}' already exists`);
+    }
+
+    do{
+      this.#id = id || `link_${Link.#incrId++}`;
+    }while(Link.#linkReg.has(this.#id));
+    Link.#linkReg.set(this.#id, this);
+  }
+
+  /**
+   * Attempts to deserializes a JSON object into an instance of this class.
+   * @param obj The serialized object.
+   * @returns The deserialized class instance.
+   */
+  public static fromJSON(obj: Record<string, any>): Link{
+    switch(obj.type){
+      case "door": return DoorLink.fromJSON(obj);
+      default: throw new Error(`Unknown link type '${obj.type}'`);
+    }
+  }
+
+  public static find<T extends Link>(id: string): T | undefined{
+    return Link.#linkReg.get(id) as (T | undefined);
+  }
+
+  public toJSON(): Record<string, unknown>{
+    return { id: this.#id };
   }
 
   /**
@@ -48,3 +77,5 @@ export default abstract class Link{
    */
   public abstract getPath(src: Room, dest: Room): Vec2[] | null;
 }
+
+import { DoorLink } from "./door-link";

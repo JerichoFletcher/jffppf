@@ -1,5 +1,5 @@
-import RectRoom from "@/mapping/rect-room";
-import DoorLink from "@/mapping/door-link";
+import { RectRoom } from "@/mapping";
+import { DoorLink } from "@/mapping";
 
 describe("Door link test", () => {
   test("Constructing a DoorLink with points outside of their respective rooms should throw an error", () => {

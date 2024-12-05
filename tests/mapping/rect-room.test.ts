@@ -1,4 +1,4 @@
-import RectRoom from "@/mapping/rect-room";
+import { RectRoom } from "@/mapping";
 
 describe("RectRoom class test", () => {
   test("Constructing a RectRoom with horizontally or vertically collinear points should throw an error", () => {

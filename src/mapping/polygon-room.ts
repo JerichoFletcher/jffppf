@@ -1,10 +1,10 @@
 import { Vec2, Lines, Vec2Like, Rect } from "@/math";
-import Room from "./room";
+import { Room } from ".";
 
 /**
  * Represents a polygonal room.
  */
-export default class PolygonRoom extends Room{
+export class PolygonRoom extends Room{
   #vertices: Vec2[];
   #boundary: Rect;
   #isConvex: boolean;
@@ -95,6 +95,24 @@ export default class PolygonRoom extends Room{
 
     // Set the polygon bounding box
     this.#boundary = Rect.fromCorners({ x: left, y: bottom }, { x: right, y: top });
+  }
+
+  /**
+   * Attempts to deserializes a JSON object into an instance of this class.
+   * @param obj The serialized object.
+   * @returns The deserialized class instance.
+   */
+  public static fromJSON(obj: Record<string, any>): PolygonRoom{
+    if(obj.type !== "poly")throw new Error("Room type is not 'poly'");
+    const vertices = (obj.vertices as Record<string, any>[]).map(o => Vec2.fromJSON(o));
+    return new PolygonRoom(vertices, obj.id);
+  }
+
+  public toJSON(): Record<string, unknown>{
+    const obj = super.toJSON();
+    obj.type = "poly";
+    obj.vertices = this.#vertices.map(v => v.toJSON());
+    return obj;
   }
   
   public get centroid(): Vec2{

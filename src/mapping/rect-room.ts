@@ -1,10 +1,10 @@
 import { Vec2, Vec2Like, Rect } from "@/math";
-import Room from "./room";
+import { Room } from ".";
 
 /**
  * Represents a rectangular room.
  */
-export default class RectRoom extends Room{
+export class RectRoom extends Room{
   #bounds: Rect;
 
   /**
@@ -21,6 +21,28 @@ export default class RectRoom extends Room{
 
     super(id);
     this.#bounds = Rect.fromCorners(p1, p2);
+  }
+
+  public static fromBounds(bounds: Rect, id?: string): RectRoom{
+    return new RectRoom({ x: bounds.left, y: bounds.bottom }, { x: bounds.right, y: bounds.top }, id);
+  }
+
+  /**
+   * Attempts to deserializes a JSON object into an instance of this class.
+   * @param obj The serialized object.
+   * @returns The deserialized class instance.
+   */
+  public static fromJSON(obj: Record<string, any>): RectRoom{
+    if(obj.type !== "rect")throw new Error("Room type is not 'rect'");
+    const bounds = Rect.fromJSON(obj.bounds);
+    return RectRoom.fromBounds(bounds, obj.id);
+  }
+
+  public toJSON(): Record<string, unknown>{
+    const obj = super.toJSON();
+    obj.type = "rect";
+    obj.bounds = this.#bounds.toJSON();
+    return obj;
   }
   
   public get centroid(): Vec2{

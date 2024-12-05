@@ -1,8 +1,7 @@
-import Room from "@/mapping/room";
+import { Room, Link } from "@/mapping";
 import { Vec2Like } from "@/math";
 import { TraversalGraph } from "./traversal-graph";
-import Link from "@/mapping/link";
-import RoomPoint from "@/mapping/room-point";
+import { RoomPoint } from "@/mapping";
 import { DistanceFunction } from "@/math/distance";
 
 /** How to determine the neighbors of each cell in room grids. */
@@ -63,7 +62,7 @@ export interface LinkDirection{
 /**
  * An abstract representation of a pathfinding strategy.
  */
-export default abstract class Pathfinder{
+export abstract class Pathfinder{
   /**
    * Computes a path between a point and a room in a map.
    * @param graph The traversal graph of the map.
