@@ -25,6 +25,7 @@ export class AstarPathfinder extends Pathfinder{
 
     this.#conf = conf ?? {};
     this.#conf.roomGridCellSize ??= 1;
+    this.#conf.vertexMergeDistance ??= 0;
     this.#conf.cellNeighborStrategy ??= "8-way";
     this.#conf.distanceMode ??= "octile";
     this.#conf.turnPenalty ??= 0;
@@ -98,21 +99,44 @@ export class AstarPathfinder extends Pathfinder{
       point: src,
     };
 
+    const mergeMaxDist = conf?.vertexMergeDistance ?? this.#conf.vertexMergeDistance!;
+    let lastExit: RoomPoint | null = null;
+
     for(const { entrance, exit } of linkPathResult.path){
-      const currentPath = this.roomPointToPoint(startPoint.room, startPoint.point, entrance.point, conf);
+      const currentPathResult = this.roomPointToPoint(startPoint.room, startPoint.point, entrance.point, conf);
 
       // This block should never be entered if the map graph is initialized correctly
-      if(!currentPath.success){
+      if(!currentPathResult.success){
         return { nodesVisited, success: false };
       }
 
-      path.push(...currentPath.path, entrance, exit);
-      nodesVisited += currentPath.nodesVisited;
-      cost += currentPath.cost;
+      // Splice with last exit point and next entrance point
+      let currentPath = currentPathResult.path.map(p => p.point);
+      currentPath.push(entrance.point);
+      if(lastExit && lastExit.room.id === currentPathResult.path[0].room.id){
+        currentPath.splice(0, 0, lastExit.point);
+      }
+      
+      // Simplify when applicable
+      if(conf?.autoSimplifyPath ?? this.#conf.autoSimplifyPath!){
+        currentPath = this.mergeCollinearVertices(currentPath);
+      }
+
+      if(mergeMaxDist > 0){
+        currentPath = this.mergeNearVertices(currentPath, mergeMaxDist);
+      }
+
+      path.push(...currentPath.map(point => ({ point, room: entrance.room })));
+      nodesVisited += currentPathResult.nodesVisited;
+      cost += currentPathResult.cost;
 
       startPoint = exit;
+      lastExit = exit;
     }
 
+    if(lastExit){
+      path.push(lastExit);
+    }
     return { nodesVisited, success: true, path, cost };
   }
 
@@ -393,21 +417,24 @@ export class AstarPathfinder extends Pathfinder{
 
     // Retrace path from the resulting search tree
     if(success){
-      let path: AstarNode<Vec2Like>[] = [];
+      let finalPath: Vec2Like[] = [];
       let current: AstarNode<Vec2Like> | null = endNode;
 
       while(current !== null){
-        path.push(current);
+        finalPath.push(current.data);
         current = current.parent;
       }
+      finalPath.reverse();
 
-      path.reverse();
-      let finalPath: Vec2Like[];
       if(conf?.autoSimplifyPath ?? this.#conf.autoSimplifyPath!){
-        finalPath = this.simplifyPath(path);
-      }else{
-        finalPath = path.map(p => p.data);
+        finalPath = this.mergeCollinearVertices(finalPath);
       }
+
+      const mergeMaxDist = conf?.vertexMergeDistance ?? this.#conf.vertexMergeDistance!;
+      if(mergeMaxDist > 0){
+        finalPath = this.mergeNearVertices(finalPath, mergeMaxDist);
+      }
+
       return { nodesVisited, success: true, path: finalPath.map(p => ({ point: p, room })), cost: endNode.fCost };
     }
 
@@ -418,15 +445,14 @@ export class AstarPathfinder extends Pathfinder{
   /**
    * Simplifies a result path to only include the start, end, and turning points.
    * @param path The raw path.
-   * @param roomGrid The search grid of the room.
    * @returns The simplified path.
    */
-  private simplifyPath(path: AstarNode<Vec2Like>[]): Vec2Like[]{
+  private mergeCollinearVertices(path: Vec2Like[]): Vec2Like[]{
     if(path.length === 0){
       return [];
     }
     if(path.length === 1){
-      return [path[0].data];
+      return [path[0]];
     }
 
     const pathSimple: Vec2Like[] = [];
@@ -434,16 +460,43 @@ export class AstarPathfinder extends Pathfinder{
 
     // If the direction between each pair differs from the previous pair, add its first node (the turning point) to the simplified path
     for(let i = 1; i < path.length; i++){
-      const newDir = Vec2.fromVec2Like(path[i - 1].data).sub(path[i].data);
+      const newDir = Vec2.fromVec2Like(path[i - 1]).sub(path[i]);
       
       if(!currDir.equals(newDir)){
-        pathSimple.push(path[i - 1].data);
+        pathSimple.push(path[i - 1]);
       }
       currDir = newDir;
     }
 
-    pathSimple.push(path[path.length - 1].data);
+    pathSimple.push(path[path.length - 1]);
     return pathSimple.map(v => { return { x: v.x, y: v.y }; });
+  }
+
+  /**
+   * Simplifies a result path by merging vertices close to each other.
+   * @param path The raw path.
+   * @returns The simplified path.
+   */
+  private mergeNearVertices(path: Vec2Like[], maxDist: number): Vec2Like[]{
+    if(path.length === 0){
+      return [];
+    }
+
+    const pathSimple: Vec2Like[] = [];
+    let lastVert = path[0];
+    pathSimple.push(lastVert);
+
+    for(let i = 1; i < path.length; i++){
+      const currVert = path[i];
+      const dist = Vec2.fromVec2Like(lastVert).sub(currVert).sqrMagnitude;
+      
+      if(dist > maxDist * maxDist){
+        lastVert = currVert;
+        pathSimple.push(lastVert);
+      }
+    }
+
+    return pathSimple;
   }
 }
 

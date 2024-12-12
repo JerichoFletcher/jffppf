@@ -15,6 +15,8 @@ export type DistanceMode = "manhattan" | "octile" | "euclidean" | DistanceFuncti
 export interface PathfindingConfig{
   /** The size (width and height) of each cell in room grids. Smaller values lead to finer-grained in-room pathing, at the cost of heavier workload. */
   roomGridCellSize?: number;
+  /** The maximum distance at which two vertices of the path would be merged. */
+  vertexMergeDistance?: number;
   /** How to determine the neighbors of each cell in room grids. */
   cellNeighborStrategy?: NeighborStrategy;
   /** How to compute distances between points in the map. May accept a custom distance function. */
