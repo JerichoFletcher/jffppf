@@ -1,4 +1,4 @@
-import * as Lines from "@/math/lines";
+import * as Lines from "../../src/math/lines";
 
 describe("Lines methods test", () => {
   test("orientation test", () => {

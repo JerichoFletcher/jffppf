@@ -1,7 +1,7 @@
-import { Vec2 } from "@/math/vector2";
+import { Vec2 } from "../math/vector2";
 import { Room } from ".";
 import { RoomPoint } from ".";
-import { Serializable } from "@/util";
+import { Serializable } from "../util";
 
 /**
  * An abstraction of links between different rooms. May represent doors or stairs.

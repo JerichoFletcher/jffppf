@@ -1,4 +1,4 @@
-import { Vec2 } from "@/math";
+import { Vec2 } from "../math";
 import { Room } from ".";
 import { RoomPoint, roomPointFromJSON, roomPointToJSON } from "./room-point";
 import { Link } from "./link";
@@ -18,15 +18,18 @@ export class DoorLink extends Link{
    * @param id The identifier of the link.
    */
   public constructor(p1: RoomPoint, p2: RoomPoint, id?: string){
-    if(p1.room.id === p2.room.id){
-      throw new Error("Door link is invalid (linked points located inside the same room)");
-    }
-    
-    if(!p1.room.isPointInside(p1.point) || !p2.room.isPointInside(p2.point)){
-      throw new Error("Door link is invalid (linked points not inside the associated rooms)");
-    }
-    
     super(id);
+    
+    if(p1.room.id === p2.room.id){
+      throw new Error(`Door link '${this.id}' is invalid (linked points located inside the same room)`);
+    }
+    
+    if(!p1.room.isPointInside(p1.point)){
+      throw new Error(`Door link '${this.id}' is invalid (first point not inside the associated room)`);
+    }
+    if(!p2.room.isPointInside(p2.point)){
+      throw new Error(`Door link '${this.id}' is invalid (second point not inside the associated room)`);
+    }
 
     this.#point1 = { ...p1 };
     this.#point2 = { ...p2 };

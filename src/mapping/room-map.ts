@@ -1,8 +1,8 @@
-import { Vec2Like } from "@/math";
+import { Vec2Like } from "../math";
 import { Room } from ".";
-import { Rect } from "@/math";
+import { Rect } from "../math";
 import { Link } from "./link";
-import { Serializable } from "@/util";
+import { Serializable } from "../util";
 
 /**
  * Represents a space consisting of rooms that can be navigated through.

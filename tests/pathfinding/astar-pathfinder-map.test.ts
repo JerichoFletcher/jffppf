@@ -1,7 +1,7 @@
-import { DoorLink, RoomMap } from "@/mapping";
-import { PolygonRoom } from "@/mapping";
-import { RectRoom } from "@/mapping";
-import { AstarPathfinder, TraversalGraph } from "@/pathfinding";
+import { DoorLink, RoomMap } from "../../src/mapping";
+import { PolygonRoom } from "../../src/mapping";
+import { RectRoom } from "../../src/mapping";
+import { AstarPathfinder, TraversalGraph } from "../../src/pathfinding";
 
 describe("A* pathfinder test for maps", () => {
   const rooms = [
@@ -146,6 +146,6 @@ describe("A* pathfinder test for maps", () => {
     });
 
     expect(pathResult.success).toBeTruthy();
-    expect(pathResult.success && pathResult.cost).toBeCloseTo(1825);
+    expect(pathResult.success && pathResult.cost).toBeCloseTo(1775);
   });
 });

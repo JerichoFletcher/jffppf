@@ -1,4 +1,4 @@
-import { Vec2 } from "@/math";
+import { Vec2 } from "../../src/math";
 
 describe("Vec2 serialization test", () => {
   test("Vec2 deserialization from JSON", () => {

@@ -1,4 +1,4 @@
-import { Vec2Like } from "@/math"
+import { Vec2Like } from "../math"
 
 /** A function that computes the distance between two points. */
 export type DistanceFunction = (from: Vec2Like, to: Vec2Like) => number;

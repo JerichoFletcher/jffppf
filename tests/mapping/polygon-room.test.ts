@@ -1,4 +1,4 @@
-import { PolygonRoom } from "@/mapping";
+import { PolygonRoom } from "../../src/mapping";
 
 describe("PolygonRoom class test", () => {
   test("Convexity of a PolygonRoom with convex shape should be true", () => {

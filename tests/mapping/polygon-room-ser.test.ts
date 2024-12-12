@@ -1,5 +1,5 @@
-import { PolygonRoom } from "@/mapping";
-import { Room } from "@/mapping";
+import { PolygonRoom } from "../../src/mapping";
+import { Room } from "../../src/mapping";
 
 describe("PolygonRoom serialization test", () => {
   test("PolygonRoom serialization to JSON", () => {

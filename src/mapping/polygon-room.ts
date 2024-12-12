@@ -1,4 +1,4 @@
-import { Vec2, Lines, Vec2Like, Rect } from "@/math";
+import { Vec2, Lines, Vec2Like, Rect } from "../math";
 import { Room } from ".";
 
 /**
@@ -185,7 +185,8 @@ export class PolygonRoom extends Room{
       }
       
       // The point is inside the polygon if the winding number is 1
-      return Math.floor(windingAngle / (2 * Math.PI)) === 1;
+      const windingNumber = windingAngle / (2 * Math.PI);
+      return 0.999 <= windingNumber && windingNumber <= 1.001;
     }
   }
 }

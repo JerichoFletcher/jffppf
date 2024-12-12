@@ -1,10 +1,10 @@
 import { Pathfinder, LinkDirection, NeighborStrategy, PathfindingConfig, PathResult } from "./pathfinder";
-import { Vec2Like, Vec2, Distance } from "@/math";
-import { Room } from "@/mapping";
+import { Vec2Like, Vec2, Distance } from "../math";
+import { Room } from "../mapping";
 import PriorityQueue from "js-priority-queue";
 import { TraversalGraph } from "./traversal-graph";
-import { RoomPoint } from "@/mapping";
-import { Link } from "@/mapping";
+import { RoomPoint } from "../mapping";
+import { Link } from "../mapping";
 
 /**
  * Encapsulates an instance of pathfinder that uses the A* algorithm.

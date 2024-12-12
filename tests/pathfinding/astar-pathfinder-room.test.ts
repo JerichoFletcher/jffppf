@@ -1,5 +1,5 @@
-import { RectRoom } from "@/mapping";
-import { AstarPathfinder } from "@/pathfinding/astar-pathfinder";
+import { RectRoom } from "../../src/mapping";
+import { AstarPathfinder } from "../../src/pathfinding/astar-pathfinder";
 
 describe("A* pathfinder test for rooms", () => {
   test("Pathfinding test inside a rectangular room, using octile + 8-way movement", () => {

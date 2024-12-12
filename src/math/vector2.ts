@@ -1,4 +1,4 @@
-import { Serializable } from "@/util";
+import { Serializable } from "../util";
 
 /** Represents a 2D vector-like object type. */
 export type Vec2Like = Vec2 | { x: number, y: number };

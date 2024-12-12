@@ -1,4 +1,4 @@
-import { Rect } from "@/math";
+import { Rect } from "../../src/math";
 
 describe("Rectangle class test", () => {
   test("Rect define by center-size", () => {

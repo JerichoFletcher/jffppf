@@ -1,4 +1,4 @@
-import { Vec2 } from "@/math/vector2";
+import { Vec2 } from "../../src/math/vector2";
 
 describe("Vector methods test", () => {
   test("Vector addition", () => {

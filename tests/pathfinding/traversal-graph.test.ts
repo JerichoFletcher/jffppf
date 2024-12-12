@@ -1,6 +1,6 @@
-import { DoorLink, RoomMap } from "@/mapping";
-import { RectRoom } from "@/mapping";
-import { AstarPathfinder, TraversalGraph } from "@/pathfinding";
+import { DoorLink, RoomMap } from "../../src/mapping";
+import { RectRoom } from "../../src/mapping";
+import { AstarPathfinder, TraversalGraph } from "../../src/pathfinding";
 
 describe("Traversal graph test", () => {
   const rooms = [

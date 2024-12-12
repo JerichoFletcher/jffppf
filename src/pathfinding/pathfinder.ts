@@ -1,8 +1,8 @@
-import { Room, Link } from "@/mapping";
-import { Vec2Like } from "@/math";
+import { Room, Link } from "../mapping";
+import { Vec2Like } from "../math";
 import { TraversalGraph } from "./traversal-graph";
-import { RoomPoint } from "@/mapping";
-import { DistanceFunction } from "@/math/distance";
+import { RoomPoint } from "../mapping";
+import { DistanceFunction } from "../math/distance";
 
 /** How to determine the neighbors of each cell in room grids. */
 export type NeighborStrategy = "4-way" | "8-way";

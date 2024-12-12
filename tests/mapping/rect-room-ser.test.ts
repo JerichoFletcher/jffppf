@@ -1,6 +1,6 @@
-import { RectRoom } from "@/mapping";
-import { Rect } from "@/math";
-import { Room } from "@/mapping";
+import { RectRoom } from "../../src/mapping";
+import { Rect } from "../../src/math";
+import { Room } from "../../src/mapping";
 
 describe("RectRoom serialization test", () => {
   test("RectRoom serialization to JSON", () => {

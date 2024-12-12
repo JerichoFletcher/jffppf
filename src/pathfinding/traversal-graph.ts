@@ -1,7 +1,7 @@
-import { Room } from "@/mapping";
+import { Room } from "../mapping";
 import { Pathfinder, PathfindingConfig } from "./pathfinder";
-import { Link, RoomMap } from "@/mapping";
-import { Serializable } from "@/util";
+import { Link, RoomMap } from "../mapping";
+import { Serializable } from "../util";
 
 /**
  * An object that stores information about inter-link pathfinding costs in each room.

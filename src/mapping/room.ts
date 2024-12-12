@@ -1,5 +1,5 @@
-import { Vec2, Vec2Like, Rect } from "@/math";
-import { Serializable } from "@/util";
+import { Vec2, Vec2Like, Rect } from "../math";
+import { Serializable } from "../util";
 
 /**
  * Represents an arbitrary room.

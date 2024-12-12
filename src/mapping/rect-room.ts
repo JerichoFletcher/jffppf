@@ -1,4 +1,4 @@
-import { Vec2, Vec2Like, Rect } from "@/math";
+import { Vec2, Vec2Like, Rect } from "../math";
 import { Room } from ".";
 
 /**

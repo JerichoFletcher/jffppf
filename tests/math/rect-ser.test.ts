@@ -1,4 +1,4 @@
-import { Rect } from "@/math";
+import { Rect } from "../../src/math";
 
 describe("Rect serialization test", () => {
   test("Rect deserialization from JSON", () => {

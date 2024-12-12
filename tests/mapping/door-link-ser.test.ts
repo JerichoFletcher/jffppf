@@ -1,5 +1,5 @@
-import { DoorLink, Link } from "@/mapping";
-import { RectRoom } from "@/mapping";
+import { DoorLink, Link } from "../../src/mapping";
+import { RectRoom } from "../../src/mapping";
 
 describe("DoorLink serialization test", () => {
   test("DoorLink serialization to JSON", () => {

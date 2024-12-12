@@ -1,4 +1,4 @@
-import { Serializable } from "@/util";
+import { Serializable } from "../util";
 import { Vec2, Vec2Like } from "./vector2";
 
 /**
