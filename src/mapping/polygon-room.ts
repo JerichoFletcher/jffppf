@@ -122,6 +122,10 @@ export class PolygonRoom extends Room{
   public get boundary(): Rect{
     return this.#boundary;
   }
+
+  public get vertices(): Vec2Like[]{
+    return this.#vertices.map(v => ({ x: v.x, y: v.y }));
+  }
   
   public get isConvex(): boolean{
     return this.#isConvex;

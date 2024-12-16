@@ -1,4 +1,4 @@
-import { Vec2 } from "../math/vector2";
+import { Vec2, Vec2Like } from "../math/vector2";
 import { Room } from ".";
 import { RoomPoint } from ".";
 import { Serializable } from "../util";
@@ -53,6 +53,11 @@ export abstract class Link implements Serializable{
   public get id(): string{
     return this.#id;
   }
+
+  /**
+   * Vertices of the link for drawing purposes.
+   */
+  public abstract get vertices(): Vec2Like[];
 
   /**
    * The cost of this link for pathfinding purposes.

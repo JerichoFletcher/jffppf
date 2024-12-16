@@ -1,4 +1,4 @@
-import { Vec2 } from "../math";
+import { Vec2, Vec2Like } from "../math";
 import { Room } from ".";
 import { RoomPoint, roomPointFromJSON, roomPointToJSON } from "./room-point";
 import { Link } from "./link";
@@ -54,6 +54,13 @@ export class DoorLink extends Link{
     obj.point1 = roomPointToJSON(this.#point1);
     obj.point2 = roomPointToJSON(this.#point2);
     return obj;
+  }
+
+  public get vertices(): Vec2Like[]{
+    return [
+      { x: this.#point1.point.x, y: this.#point1.point.y },
+      { x: this.#point2.point.x, y: this.#point2.point.y },
+    ];
   }
 
   public get cost(): number{

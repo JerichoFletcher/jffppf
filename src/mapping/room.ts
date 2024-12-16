@@ -64,6 +64,11 @@ export abstract class Room implements Serializable{
   public abstract get boundary(): Rect;
 
   /**
+   * Vertices of the room for drawing purposes.
+   */
+  public abstract get vertices(): Vec2Like[];
+
+  /**
    * Whether the room shape is convex.
    */
   public abstract get isConvex(): boolean;

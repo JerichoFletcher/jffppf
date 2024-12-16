@@ -53,6 +53,15 @@ export class RectRoom extends Room{
     return this.#bounds;
   }
 
+  public get vertices(): Vec2Like[]{
+    return [
+      { x: this.#bounds.left, y: this.#bounds.bottom },
+      { x: this.#bounds.left, y: this.#bounds.top },
+      { x: this.#bounds.right, y: this.#bounds.top },
+      { x: this.#bounds.right, y: this.#bounds.bottom },
+    ];
+  }
+
   public get isConvex(): boolean{
     return true;
   }
